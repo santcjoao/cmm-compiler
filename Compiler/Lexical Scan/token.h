@@ -13,8 +13,6 @@ enum Names
     ID,
     INTEGERCONSTANT,
     CHARCONSTANT,
-    ASP, // ''
-    DOUBLEASP, // ""
     CH, // ch
     BN, // \n
     B0, // \0

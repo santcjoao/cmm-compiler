@@ -41,37 +41,85 @@ Scanner::getLine()
 Token* 
 Scanner::nextToken()
 {
-    Token* tok;
+    Token* tok; // ou excluir essa var ou substituir o restante dos returns por ela.
     string lexeme;
-    int state = 0;
-    //TODO
+
     while(true)
     {
-        // ignoring spaces
+        // ignoring spaces -> padrão 10
         while(isspace(input[pos]))
             pos++;
-        
-        //CONSIDERAR FAZER SWITCH A PARTIR DAQUI
         
         // digit and integer const
         if (isdigit(input[pos]))
         {
-            while (isdigit(input[pos]))
+            if (!isdigit(input[pos + 1]))
             {
-                
+                pos++;
+                tok = new Token(DIGIT);
+                return tok;
             }
+            
+            while (isdigit(input[pos]))
+                pos++;    
+            tok = new Token(INTEGERCONSTANT);
+            return tok;
         }
 
+        // Char
+
         // string
-        if (isprint(input[pos]))
+        if (input[pos] == '"')
         {
+            pos++;
             while (isprint(input[pos]))
             {
-
+                if (input[pos] == '"')
+                {
+                    pos++;
+                    break; // sai do while
+                }
+                pos++;
             }
+            tok = new Token(STRINGCONSTANT); 
+            return tok;
         }
 
         // separadores
+        if(ispunct(input[pos]))
+        {
+            switch(input[pos])
+            {
+                case '(':
+                    return new Token(SEPARATOR, LPAREN);
+                    break;
+                case ')':
+                    return new Token(SEPARATOR, RPAREN);
+                    break;
+                case '[':
+                    return new Token(SEPARATOR, LBRACKET);
+                    break;
+                case ']':
+                    return new Token(SEPARATOR, RBRACKET);
+                    break;
+                case '{':
+                    return new Token(SEPARATOR, LBRACE);
+                    break;
+                case '}':
+                    return new Token(SEPARATOR, RBRACE);
+                    break;
+                case ',':
+                    return new Token(SEPARATOR, COMMA);
+                    break;
+                case ';':
+                    return new Token(SEPARATOR, SEMICOLON);
+                    break;
+                default:
+                    // não reconhece outros: inserir erro?
+                    lexicalError("LexiSeparador não está na lista de separadores aceitáveis");
+                    break;
+            }
+        }
     }
 
     return tok;
