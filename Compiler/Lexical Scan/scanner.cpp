@@ -49,7 +49,57 @@ Scanner::nextToken()
         // ignoring spaces -> padrão 10
         while(isspace(input[pos]))
             pos++;
-        
+
+        //end of file
+        if (input[pos] == '\0')
+        {
+            tok = new Token(END_OF_FILE);
+            return tok;
+        }
+
+        //ignore coments
+        if(input[pos] == '/' && input[pos + 1] == '/')
+        {
+            pos += 2;
+            while (input[pos] != '\n' && input[pos] != '\0')
+                pos++;
+            line++; //vai pra proxima linha 
+            continue;
+        }
+        else if (input[pos] == '/' && input[pos + 1] == '*')
+        {
+            pos += 2;
+            while (!(input[pos] == '*' && input[pos + 1] == '/') && input[pos] != '\0')
+            {
+                if (input[pos] == '\n')
+                    line++;
+                pos++;
+            }
+            if (input[pos] != '\0')
+                pos += 2;
+            else
+                lexicalError("Comentário não fechado.");
+            continue;
+        }
+
+        //letter
+        if(isalpha(input[pos]))
+        {
+            if (!isalpha(input[pos + 1]))
+            {
+                pos++;
+                tok = new Token(LETTER);
+                return tok;
+            }
+
+            //ID
+            while (isalpha(input[pos]) || isdigit(input[pos]) || input[pos] == '_')
+                pos++;
+            tok = new Token(ID);
+            return tok;
+
+
+        }
         // digit and integer const
         if (isdigit(input[pos]))
         {
@@ -67,6 +117,47 @@ Scanner::nextToken()
         }
 
         // Char
+        if(input[pos] == '\'') // 'a' ou '\n' ou '\0'
+        {
+            pos++;
+            if (isprint(input[pos]) && input[pos] != '\'' && input[pos] != '\\')
+            {
+                pos++;
+                if (input[pos] == '\'')
+                {
+                    pos++;
+                    tok = new Token(CH);
+                    return tok;
+                }
+            }
+            else if (input[pos] == '\\') //'\n'
+            {
+                pos++;
+                if (input[pos] == 'n')
+                {
+                    pos++;
+                    if (input[pos] == '\'')
+                    {
+                        pos++;
+                        tok = new Token(BN);
+                        return tok;
+                    }
+                }
+                else if (input[pos] == '0') //'\0'
+                {
+                    pos++;
+                    if (input[pos] == '\'')
+                    {
+                        pos++;
+                        tok = new Token(B0);
+                        return tok;
+                    }
+                }
+            }
+
+            //tem que ver caso não siga o formato correto, precisa dar erro D:
+        }
+
 
         // string
         if (input[pos] == '"')
@@ -84,6 +175,80 @@ Scanner::nextToken()
             tok = new Token(STRINGCONSTANT); 
             return tok;
         }
+
+        //operadores
+        if(ispunct(input[pos]))
+        {
+            switch(input[pos])
+            {
+                case '+':
+                    pos++;
+                    return new Token(OPERATOR, PLUS);
+                case '-':
+                    pos++;
+                    return new Token(OPERATOR, MINUS);
+                case '*':
+                    pos++;
+                    return new Token(OPERATOR, TIMES);
+                case '/':
+                    pos++;
+                    return new Token(OPERATOR, DIVIDED);
+                case '=':
+                    pos++;
+                    if (input[pos] == '=')
+                    {
+                        pos++;
+                        return new Token(OPERATOR, EQUIVALENT);
+                    }
+                    return new Token(OPERATOR, ASSIGNMENT);
+                case '!':
+                    pos++;
+                    if (input[pos] == '=')
+                    {
+                        pos++;
+                        return new Token(OPERATOR, DIFF);
+                    }
+                    return new Token(OPERATOR, NOT);
+                case '<':
+                    pos++;
+                    if (input[pos] == '=')                    
+                    {
+                        pos++;
+                        return new Token(OPERATOR, LE);
+                    }
+                    return new Token(OPERATOR, LT);
+                case '>':
+                    pos++;
+                    if (input[pos] == '=')
+                    {
+                        pos++;
+                        return new Token(OPERATOR, GE);
+                    }
+                    return new Token(OPERATOR, GT);
+                case '&':
+                    pos++;
+                    if (input[pos] == '&')
+                    {
+                        pos++;
+                        return new Token(OPERATOR, AND);
+                    }
+                    
+                    lexicalError("LexiOperador '&' não é um operador válido.");
+                    break;
+
+                case '|':
+                    pos++;
+                    if (input[pos] == '|')
+                    {
+                        pos++;
+                        return new Token(OPERATOR, OR);
+                    }
+                    lexicalError("LexiOperador '|' não é um operador válido."); 
+                    break;
+                default:
+                    lexicalError("LexiOperador não está na lista de operadores aceitáveis");
+                    break;
+            }
 
         // separadores
         if(ispunct(input[pos]))
@@ -120,6 +285,7 @@ Scanner::nextToken()
                     break;
             }
         }
+
     }
 
     return tok;

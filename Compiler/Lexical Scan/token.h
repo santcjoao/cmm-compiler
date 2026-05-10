@@ -9,6 +9,7 @@ enum Names
     //Continuar
     //Nomes e atributos dos tokens da linguagem
     UNDEF,
+    LETTER, // a-z, A-Z
     DIGIT,
     ID,
     INTEGERCONSTANT,
