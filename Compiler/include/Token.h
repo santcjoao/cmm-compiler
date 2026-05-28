@@ -1,3 +1,6 @@
+#ifndef __Token_h
+#define __Token_h
+
 #include <iostream>
 #include <ctype.h>//Funções de caracteres
 #include <string>
@@ -71,3 +74,5 @@ class Token
             attribute = attr;
         }
 };
+
+#endif

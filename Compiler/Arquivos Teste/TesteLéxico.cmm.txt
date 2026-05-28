@@ -1,0 +1,9 @@
+// comentário a ser ignorado
+      
+     
+
+
+_var1 = 10;
+18sam = 99;
+sadlmasdmsdmlamlsdamdmasmlads
+kakakak

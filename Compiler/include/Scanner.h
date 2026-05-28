@@ -1,4 +1,28 @@
-#include "scanner.h"    
+#ifndef __Scanner_h
+#define __Scanner_h
+
+#include <fstream>
+#include "token.h"
+
+class Scanner 
+{
+    private: 
+        string input;//Armazena o texto de entrada
+        int pos;//Posição atual
+        int line;
+    
+    public:
+    //Construtor
+        Scanner(string);
+
+        int getLine();
+    
+        //Método que retorna o próximo token da entrada
+        Token* nextToken();        
+    
+        //Método para manipular erros
+        void lexicalError(string);
+};
 
 //Construtor que recebe uma string com o nome do arquivo 
 //de entrada e preenche input com seu conteúdo.
@@ -94,29 +118,37 @@ Scanner::nextToken()
 
             //ID
             while (isalpha(input[pos]) || isdigit(input[pos]) || input[pos] == '_')
+            {
+                lexeme.push_back(input[pos]);
                 pos++;
-            tok = new Token(ID);
+            }
+            tok = new Token(ID, lexeme);
             return tok;
 
 
         }
+
         // digit and integer const
         if (isdigit(input[pos]))
         {
             if (!isdigit(input[pos + 1]))
             {
+                lexeme.push_back(input[pos]);
                 pos++;
-                tok = new Token(DIGIT);
+                tok = new Token(DIGIT, lexeme);
                 return tok;
             }
             
             while (isdigit(input[pos]))
+            {
+                lexeme.push_back(input[pos]);
                 pos++;    
-            tok = new Token(INTEGERCONSTANT);
+            }
+            tok = new Token(INTEGERCONSTANT, lexeme);
             return tok;
         }
 
-        // Char
+        // Char: não deveríamos verificar por '' primeiro?
         if(input[pos] == '\'') // 'a' ou '\n' ou '\0'
         {
             pos++;
@@ -125,8 +157,9 @@ Scanner::nextToken()
                 pos++;
                 if (input[pos] == '\'')
                 {
+                    lexeme.push_back(input[pos]);
                     pos++;
-                    tok = new Token(CH);
+                    tok = new Token(CH, lexeme);
                     return tok;
                 }
             }
@@ -138,6 +171,7 @@ Scanner::nextToken()
                     pos++;
                     if (input[pos] == '\'')
                     {
+                        // Se quisermos o \n: lexeme.push_back(input[pos]);
                         pos++;
                         tok = new Token(BN);
                         return tok;
@@ -148,6 +182,7 @@ Scanner::nextToken()
                     pos++;
                     if (input[pos] == '\'')
                     {
+                        // Se quisermos o \0: lexeme.push_back(input[pos]);
                         pos++;
                         tok = new Token(B0);
                         return tok;
@@ -157,7 +192,6 @@ Scanner::nextToken()
 
             //tem que ver caso não siga o formato correto, precisa dar erro D:
         }
-
 
         // string
         if (input[pos] == '"')
@@ -170,9 +204,10 @@ Scanner::nextToken()
                     pos++;
                     break; // sai do while
                 }
+                lexeme.push_back(input[pos]);
                 pos++;
             }
-            tok = new Token(STRINGCONSTANT); 
+            tok = new Token(STRINGCONSTANT, lexeme); 
             return tok;
         }
 
@@ -256,40 +291,48 @@ Scanner::nextToken()
             switch(input[pos])
             {
                 case '(':
-                    return new Token(SEPARATOR, LPAREN);
-                    break;
+                    pos++;
+                    tok = new Token(SEPARATOR, LPAREN);
+                    return tok;
                 case ')':
-                    return new Token(SEPARATOR, RPAREN);
-                    break;
+                    pos++;
+                    tok = new Token(SEPARATOR, RPAREN);
+                    return tok;
                 case '[':
-                    return new Token(SEPARATOR, LBRACKET);
-                    break;
+                    pos++;
+                    tok = new Token(SEPARATOR, LBRACKET);
+                    return tok;
                 case ']':
-                    return new Token(SEPARATOR, RBRACKET);
-                    break;
+                    pos++;
+                    tok = new Token(SEPARATOR, RBRACKET);
+                    return tok;
                 case '{':
-                    return new Token(SEPARATOR, LBRACE);
-                    break;
+                    pos++;
+                    tok = new Token(SEPARATOR, LBRACE);
+                    return tok;
                 case '}':
-                    return new Token(SEPARATOR, RBRACE);
-                    break;
+                    pos++;
+                    tok = new Token(SEPARATOR, RBRACE);
+                    return tok;
                 case ',':
-                    return new Token(SEPARATOR, COMMA);
-                    break;
+                    pos++;
+                    tok = new Token(SEPARATOR, COMMA);
+                    return tok;
                 case ';':
-                    return new Token(SEPARATOR, SEMICOLON);
-                    break;
+                    pos++;
+                    tok = new Token(SEPARATOR, SEMICOLON);
+                    return tok;
                 default:
                     // não reconhece outros: inserir erro?
                     lexicalError("LexiSeparador não está na lista de separadores aceitáveis");
                     break;
-                }
             }
-
         }
 
-    return tok;
- 
+    }
+
+        tok = new Token(UNDEF);
+        return tok;
     }
 }
 
@@ -300,3 +343,5 @@ Scanner::lexicalError(string msg)
     
     exit(EXIT_FAILURE);
 }
+
+#endif
