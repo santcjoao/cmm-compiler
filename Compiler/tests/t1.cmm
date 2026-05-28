@@ -6,7 +6,7 @@
 
 int main() {
     int x = 10;
-    char c = '\n';
+    char c = "pl";
     string s = "Ola Mundo";
     
     if (x >= 10 && x != 0) {
