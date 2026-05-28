@@ -6,7 +6,6 @@ using namespace std;
 
 enum Names 
 {
-    //Continuar
     //Nomes e atributos dos tokens da linguagem
     UNDEF,  // - 0
     LETTER, // a-z, A-Z - 1
@@ -69,5 +68,12 @@ class Token
         {
             this->name = name;
             attribute = attr;
+        }
+
+        Token(int name, int attr, string l)
+        {
+            this->name = name;
+            attribute = attr;
+            this->lexeme = l;
         }
 };
