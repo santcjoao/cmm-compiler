@@ -211,7 +211,7 @@ Scanner::nextToken()
             return tok;
         }
 
-        //operadores
+        //operadores e separadores
         if(ispunct(input[pos]))
         {
             switch(input[pos])
@@ -268,9 +268,8 @@ Scanner::nextToken()
                         return new Token(OPERATOR, AND);
                     }
                     
-                    lexicalError("LexiOperador '&' não é um operador válido.");
+                    lexicalError("Scanner: O operador '&' não é um operador válido.");
                     break;
-
                 case '|':
                     pos++;
                     if (input[pos] == '|')
@@ -278,18 +277,8 @@ Scanner::nextToken()
                         pos++;
                         return new Token(OPERATOR, OR);
                     }
-                    lexicalError("LexiOperador '|' não é um operador válido."); 
+                    lexicalError("Scanner: O operador '|' não é um operador válido."); 
                     break;
-                default:
-                    lexicalError("LexiOperador não está na lista de operadores aceitáveis");
-                    break;
-            }
-
-        // separadores
-        if(ispunct(input[pos]))
-        {
-            switch(input[pos])
-            {
                 case '(':
                     pos++;
                     tok = new Token(SEPARATOR, LPAREN);
@@ -323,13 +312,10 @@ Scanner::nextToken()
                     tok = new Token(SEPARATOR, SEMICOLON);
                     return tok;
                 default:
-                    // não reconhece outros: inserir erro?
-                    lexicalError("LexiSeparador não está na lista de separadores aceitáveis");
+                    lexicalError("Scanner: O operador ou separador não está na lista de operadores / separadores aceitáveis.");
                     break;
             }
         }
-
-    }
 
         tok = new Token(UNDEF);
         return tok;
