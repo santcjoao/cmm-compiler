@@ -1,4 +1,4 @@
-#include "Lexer/Scanner.h"
+#include "include/Scanner.h"
 
 const string tokenNames[] = {
     "UNDEF", "LETTER", "DIGIT", "ID", "INTEGERCONSTANT", "CHARCONSTANT", "CH", "BN", "B0",

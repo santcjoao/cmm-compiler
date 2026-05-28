@@ -244,7 +244,7 @@ Scanner::readCharLiteral()
             if (matchCurrent('\''))
             {
                 advance();
-                return makeToken(BN, UNDEF, "\\n");
+                return makeToken(CHARCONSTANT, BN, "\\n");
             }
         }
         else if (matchCurrent('0'))
@@ -253,7 +253,7 @@ Scanner::readCharLiteral()
             if (matchCurrent('\''))
             {
                 advance();
-                return makeToken(B0, UNDEF, "\\0");
+                return makeToken(CHARCONSTANT, B0, "\\0");
             }
         }
         else
@@ -268,7 +268,7 @@ Scanner::readCharLiteral()
         {
             advance(); // Consome a aspa final
             string lexeme = extractLexeme(startPos); // Guarda incluindo as aspas, ex: 'a'
-            return makeToken(CH, UNDEF, lexeme);
+            return makeToken(CHARCONSTANT, CH, lexeme);
         }
     }
 
