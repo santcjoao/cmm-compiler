@@ -34,7 +34,7 @@ class Scanner
         void skipWhitespaceAndComments();
 
         /// Helpers de criação de tokens
-        string extractLexeme(int startPos);
+        string extractLexeme(int startPos, int endPos);
         Token* makeToken(int name, int attribute = UNDEF, string lexeme = "");
 
         /// Helpers de leitura de tokens

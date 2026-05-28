@@ -45,7 +45,6 @@ Scanner::lexicalError(string msg)
 }
 
 //  Método que retorna o próximo token da entrada
-//  Método que retorna o próximo token da entrada
 Token* 
 Scanner::nextToken()
 {
@@ -157,9 +156,9 @@ Scanner::makeToken(int name, int attribute, string lexeme)
     return new Token(name, attribute, lexeme);
 }
 string
-Scanner::extractLexeme(int startPos)
+Scanner::extractLexeme(int startPos, int endPos)
 {
-    return input.substr(startPos, pos - startPos);
+    return input.substr(startPos, endPos - startPos);
 }
 
 // Helper para pular espaços e comentários
@@ -226,7 +225,7 @@ Scanner::readNumber()
         advance();
     }
 
-    string lexeme = extractLexeme(startPos);
+    string lexeme = extractLexeme(startPos, pos);
     return makeToken(INTEGERCONSTANT, UNDEF, lexeme);
 }
 Token*
@@ -267,7 +266,7 @@ Scanner::readCharLiteral()
         if (matchCurrent('\''))
         {
             advance(); // Consome a aspa final
-            string lexeme = extractLexeme(startPos); // Guarda incluindo as aspas, ex: 'a'
+            string lexeme = extractLexeme(startPos+1, pos-1); 
             return makeToken(CHARCONSTANT, CH, lexeme);
         }
     }
@@ -295,7 +294,8 @@ Scanner::readStringLiteral()
     }
 
     advance(); // Consume as aspas finais
-    string lexeme = extractLexeme(startPos);
+    // Extrai a string ignorando as aspas (inicial e final)
+    string lexeme = extractLexeme(startPos + 1, pos - 1);
     return makeToken(STRINGCONSTANT, UNDEF, lexeme);
 }
 Token*
@@ -308,7 +308,7 @@ Scanner::readIdentifierOrKeyword()
         advance();
     }
 
-    string lexeme = extractLexeme(startPos);
+    string lexeme = extractLexeme(startPos, pos);
     
     // Aqui daria p checar se o lexema eh uma palavra reservada, mas coloquei pra ir como ID mesmo
     return makeToken(ID, UNDEF, lexeme);
