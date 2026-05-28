@@ -7,6 +7,18 @@
 
 using namespace std;
 
+enum Keywords
+{
+    VOID,
+    INT,
+    CHAR,
+    IF,
+    ELSE,
+    WHILE,
+    FOR,
+    RETURN
+};
+
 enum Names 
 {
     //Nomes e atributos dos tokens da linguagem
