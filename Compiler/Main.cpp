@@ -1,4 +1,11 @@
-#include "Scanner.h"
+#include "Lexer/Scanner.h"
+
+const string tokenNames[] = {
+    "UNDEF", "LETTER", "DIGIT", "ID", "INTEGERCONSTANT", "CHARCONSTANT", "CH", "BN", "B0",
+    "STRINGCONSTANT", "OPERATOR", "PLUS", "MINUS", "TIMES", "DIVIDED", "ASSIGN", "EQUIVALENT",
+    "DIFF", "LE", "LT", "GE", "GT", "AND", "OR", "NOT", "SEPARATOR", "LPAREN", "RPAREN",
+    "LBRACKET", "RBRACKET", "LBRACE", "RBRACE", "COMMA", "SEMICOLON", "END_OF_FILE"
+};
 
 int main(int argc, char* argv[]) 
 {
@@ -23,8 +30,18 @@ int main(int argc, char* argv[])
     {
         t = scanner->nextToken();
         
-        cout << t->name << " ";
+        cout << "<" << tokenNames[t->name];
+        
+        // Exibir o lexema se houver
+        if (!t->lexeme.empty()) {
+            cout << ", \"" << t->lexeme << "\"";
+        }
+        
+        cout << "> ";
+        
     }while (t->name != END_OF_FILE);
+
+    cout << endl; // Pra quebrar a linha no fim
 
     delete scanner;
     

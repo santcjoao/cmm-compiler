@@ -1,0 +1,16 @@
+// Arquivo de teste para o Lexer
+/* 
+    Testando multi-line comment 
+    e palavras-chave/identificadores
+*/
+
+int main() {
+    int x = 10;
+    char c = '\n';
+    string s = "Ola Mundo";
+    
+    if (x >= 10 && x != 0) {
+        x = x + 1;
+    }
+    return 0;
+}
