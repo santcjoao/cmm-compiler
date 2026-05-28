@@ -1,10 +1,12 @@
 CXX = g++
 CXXFLAGS = -I. -g -std=c++20
 
-SRC = Main.cpp Lexer/Scanner.cpp
-BUILD_DIR = Build
+SRC = Main.cpp src/Scanner.cpp
+BUILD_DIR = build
+
 OBJ = $(SRC:%.cpp=$(BUILD_DIR)/%.o)
 EXEC = $(BUILD_DIR)/compiler
+
 
 all: $(EXEC)
 
@@ -20,4 +22,4 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 run: $(EXEC)
-	./$(EXEC) ./Testes/test.cmm
+	./$(EXEC) $(FILE)

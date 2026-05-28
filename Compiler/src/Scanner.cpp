@@ -1,4 +1,4 @@
-#include "Scanner.h"    
+#include "../include/Scanner.h"    
 
 //  Construtor: Recebe o nome do arquivo de entrada, lê seu conteúdo e o armazena na variável input.
 Scanner::Scanner(string input)
