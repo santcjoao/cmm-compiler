@@ -200,7 +200,7 @@ Scanner::nextToken()
                         pos++;
                         return new Token(OPERATOR, EQUIVALENT);
                     }
-                    return new Token(OPERATOR, ASSIGNMENT);
+                    return new Token(OPERATOR, ASSIGN);
                 case '!':
                     pos++;
                     if (input[pos] == '=')
@@ -283,13 +283,14 @@ Scanner::nextToken()
                     // não reconhece outros: inserir erro?
                     lexicalError("LexiSeparador não está na lista de separadores aceitáveis");
                     break;
+                }
             }
-        }
 
-    }
+        }
 
     return tok;
  
+    }
 }
 
 void 
