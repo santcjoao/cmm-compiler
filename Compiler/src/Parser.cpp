@@ -33,9 +33,11 @@ Parser::run()
 void
 Parser::program()
 {
+	/* assim tbm funcionaria: vamos ponderar pra ver qual queremos.
     while (lToken->name != END_OF_FILE)
         function();
-
+	*/
+	a();
     match(END_OF_FILE);
 }
 
@@ -51,7 +53,6 @@ void Parser::a()
 
 void Parser::b()
 {
-	// TODO
 	if (lToken->name == LBRACKET|| lToken->attribute == LBRACKET)
 	{
 		advance();
@@ -63,7 +64,6 @@ void Parser::b()
 
 void Parser::c()
 {
-	// TODO
 	if (lToken->name == COMMA || lToken->attribute == COMMA)
 	{
 		advance();
@@ -76,7 +76,6 @@ void Parser::c()
 
 void Parser::d()
 {
-	// TODO
 	if (lToken->name == LBRACKET || lToken->attribute == LBRACKET)
 	{
 		advance();
@@ -87,7 +86,6 @@ void Parser::d()
 
 void Parser::e()
 {
-	// TODO
 	if (lToken->name == COMMA || lToken->attribute == COMMA)
 	{
 		advance();
@@ -122,7 +120,6 @@ void Parser::g()
 
 void Parser::h()
 {
-	// TODO
 	// Checking if next token is in the first of Statement
 	if (lToken->lexeme == "if" || lToken->lexeme == "while" || lToken->lexeme == "for"
 		|| lToken->lexeme == "return" || lToken->name == ID || lToken->attribute == ID
@@ -146,11 +143,11 @@ void Parser::i()
 		d();
 		i();
 	}
+	return;
 }
 
 void Parser::j()
 {
-	// TODO
 	if (lToken->lexeme == "else")
 	{
 		advance();
@@ -161,7 +158,6 @@ void Parser::j()
 
 void Parser::k()
 {
-	// TODO
 	if (lToken->name == LBRACKET || lToken->attribute == LBRACKET)
 	{
 		advance();
@@ -224,7 +220,6 @@ Parser::function()
 	n();
 	h();
 	match(RBRACE);
-    //TODO
 }
 
 void Parser::varDeclaration()
@@ -305,9 +300,7 @@ void Parser::statement()
 		match(RBRACE);
 	}
 	else if (lToken->name == SEMICOLON || lToken->attribute == SEMICOLON)
-	{
 		advance();
-	}
 	else
 		error("Statement inválido");
 }
@@ -329,7 +322,8 @@ void Parser::aL()
 		match(RPAREN);
 		match(SEMICOLON);
 	}
-	else if (lToken->name == LBRACKET || lToken->attribute == LBRACKET)
+	else if (lToken->name == LBRACKET || lToken->attribute == LBRACKET
+			|| lToken->name == ASSIGN || lToken->attribute == ASSIGN)
 	{
 		k();
 		match(ASSIGN);
