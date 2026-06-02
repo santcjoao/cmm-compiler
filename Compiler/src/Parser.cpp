@@ -27,7 +27,7 @@ void Parser::consumeExpectedToken(int Token) {
 }
 
 bool Parser::isStartOfExpression() {
-  return (checkTokens(COMMA, NOT, ID, LPAREN, INTEGERCONSTANT, CHARCONSTANT,
+  return (checkTokens(MINUS, NOT, ID, LPAREN, INTEGERCONSTANT, CHARCONSTANT,
                       STRINGCONSTANT));
 }
 
