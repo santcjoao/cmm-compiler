@@ -1,491 +1,337 @@
 #include "../include/Parser.h"
 
-Parser::Parser(string input)
-{
-	scanner = new Scanner(input);
+Parser::Parser(string input) { scanner = new Scanner(input); }
+
+void Parser::run() {
+  advanceToNextToken();
+  program();
+  cout << "Compilação encerrada.\n";
 }
 
-void
-Parser::advance()
-{
-	lToken = scanner->nextToken();
+void Parser::program() {
+  parseFunctionList();
+  consumeExpectedToken(END_OF_FILE);
 }
 
-void
-Parser::match(int t)
-{
-	if (lToken->name == t || lToken->attribute == t)
-		advance();
-	else
-		error("Erro inesperado");
+void Parser::advanceToNextToken() { lToken = scanner->nextToken(); }
+
+void Parser::consumeExpectedToken(int Token) {
+  if (checkSingleToken(Token)) {
+    advanceToNextToken();
+  } else {
+    string expected = tokenToString(Token);
+    string found =
+        lToken->lexeme.empty() ? tokenToString(lToken->name) : lToken->lexeme;
+    error("esperado '" + expected + "', mas recebemos '" + found + "'");
+  }
 }
 
-void
-Parser::run()
-{
-	advance();	
-
-	program();
-	
-	cout << "Compilação encerrada com sucesso!\n";
+bool Parser::isStartOfExpression() {
+  return (checkTokens(COMMA, NOT, ID, LPAREN, INTEGERCONSTANT, CHARCONSTANT,
+                      STRINGCONSTANT));
 }
 
-void
-Parser::program()
-{
-	/* assim tbm funcionaria: vamos ponderar pra ver qual queremos.
-    while (lToken->name != END_OF_FILE)
-        function();
-	*/
-	a();
-    match(END_OF_FILE);
+bool Parser::isStartOfStatement() {
+  return (checkKeywords(IF, WHILE, FOR, RETURN) ||
+          checkTokens(ID, LBRACE, SEMICOLON));
 }
 
-void Parser::a()
-{
-	if (lToken->lexeme == "void" || lToken->lexeme == "char" || lToken->lexeme == "int")
-	{
-		function();
-		a();
-	}
-	return;
+void Parser::error(string str) {
+  int line = scanner->getTokenLine();
+  int col = scanner->getTokenColumn();
+
+  string lexeme =
+      lToken->lexeme.empty() ? tokenToString(lToken->name) : lToken->lexeme;
+  cout << "arquivo.cmm:" << line << ":" << col << ": erro: " << str
+       << " (no token: '" << lexeme << "')\n";
+
+  string sourceLine = scanner->getLineContent(line);
+  if (!sourceLine.empty()) {
+    cout << "   " << line << " | " << sourceLine << "\n";
+    int offset = 3 + to_string(line).length() + 3 + (col > 0 ? col - 1 : 0);
+    cout << string(offset, ' ') << "^\n";
+  }
+
+  exit(EXIT_FAILURE);
 }
 
-void Parser::b()
-{
-	if (lToken->name == LBRACKET|| lToken->attribute == LBRACKET)
-	{
-		advance();
-		match(INTEGERCONSTANT);
-		match(RBRACKET);
-	}
-	return;
+void Parser::parseFunctionList() {
+  if (checkKeywords(VOID, CHAR, INT)) {
+    parseFunction();
+    parseFunctionList();
+  }
 }
 
-void Parser::c()
-{
-	if (lToken->name == COMMA || lToken->attribute == COMMA)
-	{
-		advance();
-		varDeclaration();
-		c();
-		match(SEMICOLON);
-	}
-	return;
+void Parser::parseFunction() {
+  if (checkKeywords(VOID))
+    advanceToNextToken();
+  else
+    parseType();
+  consumeExpectedToken(ID);
+  consumeExpectedToken(LPAREN);
+  parseParamTypes();
+  consumeExpectedToken(RPAREN);
+  consumeExpectedToken(LBRACE);
+  parseLocalDeclarations();
+  parseStatementList();
+  consumeExpectedToken(RBRACE);
 }
 
-void Parser::d()
-{
-	if (lToken->name == LBRACKET || lToken->attribute == LBRACKET)
-	{
-		advance();
-		match(RBRACKET);
-	}
-	return;
+void Parser::parseParamTypes() {
+  if (checkKeywords(VOID))
+    advanceToNextToken();
+  else if (checkKeywords(CHAR, INT)) {
+    advanceToNextToken();
+    consumeExpectedToken(ID);
+    parseArrayBrackets();
+    parseMoreParameters();
+  } else
+    error("Tipo ou 'void' esperado");
 }
 
-void Parser::e()
-{
-	if (lToken->name == COMMA || lToken->attribute == COMMA)
-	{
-		advance();
-		expression();
-		e();
-	}
-	return;
+void Parser::parseMoreParameters() {
+  if (checkTokens(COMMA)) {
+    advanceToNextToken();
+    parseType();
+    consumeExpectedToken(ID);
+    parseArrayBrackets();
+    parseMoreParameters();
+  }
 }
 
-void Parser::f()
-{
-	// Checking if next token is in the first of Expression
-	if (lToken->name == COMMA || lToken->attribute == COMMA
-		|| lToken->name == NOT || lToken->attribute == NOT
-		|| lToken->name == ID || lToken->attribute == ID
-		|| lToken->name == LPAREN || lToken->attribute == LPAREN
-		|| lToken->name == INTEGERCONSTANT || lToken->attribute == INTEGERCONSTANT
-		|| lToken->name == CHARCONSTANT || lToken->attribute == CHARCONSTANT
-		|| lToken->name == STRINGCONSTANT || lToken->attribute == STRINGCONSTANT)
-	{
-		advance();
-		expression();
-		e();
-	}
-	return;
+void Parser::parseType() {
+  if (checkKeywords(CHAR, INT))
+    advanceToNextToken();
+  else
+    error("Tipo (char, int) esperado");
 }
 
-void Parser::g()
-{
-	if (lToken->name == LPAREN || lToken->attribute == LPAREN){
-		advance();
-		f();
-		match(RPAREN);
-
-	}
-	else if(lToken->name == LBRACKET || lToken->attribute == LBRACKET){
-		advance();
-		expression();
-		match(RBRACKET);
-	}
-
-	return;	
+void Parser::parseLocalDeclarations() {
+  if (checkKeywords(CHAR, INT)) {
+    parseType();
+    parseVariableDeclaration();
+    parseMoreVariables();
+    consumeExpectedToken(SEMICOLON);
+    parseLocalDeclarations();
+  }
 }
 
-void Parser::h()
-{
-	// Checking if next token is in the first of Statement
-	if (lToken->lexeme == "if" || lToken->lexeme == "while" || lToken->lexeme == "for"
-		|| lToken->lexeme == "return" || lToken->name == ID || lToken->attribute == ID
-		|| lToken->name == LBRACE || lToken->attribute == LBRACE
-		|| lToken->name == SEMICOLON || lToken->attribute == SEMICOLON)
-	{
-		statement();
-		h();
-	}
-	return;
+void Parser::parseVariableDeclaration() {
+  consumeExpectedToken(ID);
+  parseArraySize();
 }
 
-void Parser::i()
-{
-	// TODO
-	if (lToken->name == COMMA || lToken->attribute == COMMA)
-	{
-		advance();
-		type();
-		match(ID);
-		d();
-		i();
-	}
-	return;
+void Parser::parseMoreVariables() {
+  if (checkTokens(COMMA)) {
+    advanceToNextToken();
+    parseVariableDeclaration();
+    parseMoreVariables();
+  }
 }
 
-void Parser::j()
-{
-	if (lToken->lexeme == "else")
-	{
-		advance();
-		statement();
-	}
-	return;
+void Parser::parseArraySize() {
+  if (checkTokens(LBRACKET)) {
+    advanceToNextToken();
+    consumeExpectedToken(INTEGERCONSTANT);
+    consumeExpectedToken(RBRACKET);
+  }
 }
 
-void Parser::k()
-{
-	if (lToken->name == LBRACKET || lToken->attribute == LBRACKET)
-	{
-		advance();
-		expression();
-		match(RBRACKET);
-	}
-	return;
+void Parser::parseArrayBrackets() {
+  if (checkTokens(LBRACKET)) {
+    advanceToNextToken();
+    consumeExpectedToken(RBRACKET);
+  }
 }
 
-void Parser::l()
-{
-	// checking if next token is in the first of Assign
-	if (lToken->name == ID || lToken->attribute == ID)
-		assign();
-	return;
+void Parser::parseStatement() {
+  if (checkKeywords(IF)) {
+    advanceToNextToken();
+    consumeExpectedToken(LPAREN);
+    parseExpression();
+    consumeExpectedToken(RPAREN);
+    parseStatement();
+    parseOptionalElse();
+  } else if (checkKeywords(WHILE)) {
+    advanceToNextToken();
+    consumeExpectedToken(LPAREN);
+    parseExpression();
+    consumeExpectedToken(RPAREN);
+    parseStatement();
+  } else if (checkKeywords(FOR)) {
+    advanceToNextToken();
+    consumeExpectedToken(LPAREN);
+    parseOptionalAssignment();
+    consumeExpectedToken(SEMICOLON);
+    parseOptionalExpression();
+    consumeExpectedToken(SEMICOLON);
+    parseOptionalAssignment();
+    consumeExpectedToken(RPAREN);
+    parseStatement();
+  } else if (checkKeywords(RETURN)) {
+    advanceToNextToken();
+    parseOptionalExpression();
+    consumeExpectedToken(SEMICOLON);
+  } else if (checkTokens(ID)) {
+    if (checkKeywords(CHAR, INT, VOID)) {
+      error("Declarações de variáveis devem vir antes das instruções/comandos "
+            "do bloco");
+    }
+    advanceToNextToken();
+    parseAssignmentOrCall();
+  } else if (checkTokens(LBRACE)) {
+    advanceToNextToken();
+    parseStatementList();
+    consumeExpectedToken(RBRACE);
+  } else if (checkTokens(SEMICOLON))
+    advanceToNextToken();
+  else
+    error("Statement (comando) inválido");
 }
 
-void Parser::m()
-{
-	// Checking if next token is in the first of Expression
-	if (lToken->name == COMMA || lToken->attribute == COMMA
-		|| lToken->name == NOT || lToken->attribute == NOT
-		|| lToken->name == ID || lToken->attribute == ID
-		|| lToken->name == LPAREN || lToken->attribute == LPAREN
-		|| lToken->name == INTEGERCONSTANT || lToken->attribute == INTEGERCONSTANT
-		|| lToken->name == CHARCONSTANT || lToken->attribute == CHARCONSTANT
-		|| lToken->name == STRINGCONSTANT || lToken->attribute == STRINGCONSTANT)
-	{
-		expression();
-	}
-	return;
+void Parser::parseStatementList() {
+  if (isStartOfStatement()) {
+    parseStatement();
+    parseStatementList();
+  }
 }
 
-void Parser::n()
-{
-	// Cheking if next token is in the first of type
-	if (lToken->lexeme == "char" || lToken->lexeme == "int")
-	{
-		type();
-		varDeclaration();
-		c();
-		n();
-	}
-	return;
+void Parser::parseOptionalElse() {
+  if (checkKeywords(ELSE)) {
+    advanceToNextToken();
+    parseStatement();
+  }
 }
 
-void
-Parser::function()
-{
-	// TODO: Check void
-	if (lToken->lexeme == "void")
-		advance();
-	else
-    	type();
-    match(ID);
-    match(LPAREN);
-    paramTypes();
-    match(RPAREN);
-    match(LBRACE);
-	n();
-	h();
-	match(RBRACE);
+void Parser::parseOptionalAssignment() {
+  if (checkTokens(ID)) {
+    parseAssignment();
+  }
 }
 
-void Parser::varDeclaration()
-{
-	match(ID);
-	b();
+void Parser::parseAssignment() {
+  consumeExpectedToken(ID);
+  parseArrayAccess();
+  consumeExpectedToken(ASSIGN);
+  parseExpression();
 }
 
-void Parser::type()
-{
-	if (lToken->lexeme == "char" || lToken->lexeme == "int")
-		advance();
-	else
-		error("Tipo esperado");
+void Parser::parseAssignmentOrCall() {
+  if (checkTokens(LPAREN)) {
+    advanceToNextToken();
+    parseArgumentList();
+    consumeExpectedToken(RPAREN);
+    consumeExpectedToken(SEMICOLON);
+  } else if (checkTokens(LBRACKET, ASSIGN)) {
+    parseArrayAccess();
+    consumeExpectedToken(ASSIGN);
+    parseExpression();
+    consumeExpectedToken(SEMICOLON);
+  } else
+    error("Atribuição ou chamada de função esperada");
 }
 
-void Parser::paramTypes()
-{
-	if (lToken->lexeme == "void")
-		advance();
-	else if (lToken->lexeme == "char" || lToken->lexeme == "int")
-	{
-		advance();
-		match(ID);
-		d();
-		i();
-	}
-	else
-		error("Tipo ou void esperado");
+void Parser::parseExpression() {
+  if (checkTokens(MINUS, NOT)) {
+    advanceToNextToken();
+    parseExpression();
+    parseExpressionTail();
+  } else if (checkTokens(LPAREN)) {
+    advanceToNextToken();
+    parseExpression();
+    consumeExpectedToken(RPAREN);
+    parseExpressionTail();
+  } else if (checkTokens(ID)) {
+    advanceToNextToken();
+    parseIdentifierSuffix();
+    parseExpressionTail();
+  } else if (checkTokens(INTEGERCONSTANT, CHARCONSTANT, STRINGCONSTANT)) {
+    advanceToNextToken();
+    parseExpressionTail();
+  } else {
+    string found =
+        lToken->lexeme.empty() ? tokenToString(lToken->name) : lToken->lexeme;
+    error("Expressão mal formulada (token inesperado: '" + found + "')");
+  }
 }
 
-void Parser::statement()
-{
-	if(lToken->lexeme == "if")
-	{
-		advance();
-		match(LPAREN);
-		expression();
-		match(RPAREN);
-		statement();
-		j();	
-	}
-	else if (lToken->lexeme == "while")
-	{
-		advance();
-		match(LPAREN);
-		expression();
-		match(RPAREN);
-		statement();
-	}
-	else if (lToken->lexeme == "for")
-	{
-		advance();
-		match(LPAREN);
-		l();
-		match(SEMICOLON);
-		m();
-		match(SEMICOLON);
-		l();
-		match(RPAREN);
-		statement();
-	}
-	else if (lToken->lexeme == "return")
-	{
-		advance();
-		m();
-		match(SEMICOLON);
-	}
-	else if (lToken->name == ID || lToken->attribute == ID)
-	{
-		advance();
-		aL();
-	}
-	else if (lToken->name == LBRACE || lToken->attribute == LBRACE)
-	{
-		advance();
-		h();
-		match(RBRACE);
-	}
-	else if (lToken->name == SEMICOLON || lToken->attribute == SEMICOLON)
-		advance();
-	else
-		error("Statement inválido");
+void Parser::parseExpressionTail() {
+  if (checkTokens(PLUS, MINUS, TIMES, DIVIDED)) {
+    parseBinaryOperator();
+    parseExpression();
+    parseExpressionTail();
+  } else if (checkTokens(EQUIVALENT, DIFF, LE, GE, LT, GT)) {
+    parseRelationalOperator();
+    parseExpression();
+    parseExpressionTail();
+  } else if (checkTokens(AND, OR)) {
+    parseLogicalOperator();
+    parseExpression();
+    parseExpressionTail();
+  }
 }
 
-void Parser::assign()
-{
-	match(ID);
-	k();
-	match(ASSIGN);
-	expression();
+void Parser::parseOptionalExpression() {
+  if (isStartOfExpression()) {
+    parseExpression();
+  }
 }
 
-void Parser::aL()
-{
-	if (lToken->name == LPAREN || lToken->attribute == LPAREN)
-	{
-		advance();
-		f();
-		match(RPAREN);
-		match(SEMICOLON);
-	}
-	else if (lToken->name == LBRACKET || lToken->attribute == LBRACKET
-			|| lToken->name == ASSIGN || lToken->attribute == ASSIGN)
-	{
-		k();
-		match(ASSIGN);
-		expression();
-	}
-	else
-		error("Atribuição ou chamada de função esperada");
+void Parser::parseIdentifierSuffix() {
+  if (checkTokens(LPAREN)) {
+    advanceToNextToken();
+    parseArgumentList();
+    consumeExpectedToken(RPAREN);
+  } else if (checkTokens(LBRACKET)) {
+    advanceToNextToken();
+    parseExpression();
+    consumeExpectedToken(RBRACKET);
+  }
 }
 
-void Parser::expression()
-{
-	if (lToken->name == MINUS || lToken->attribute == MINUS
-		|| lToken->name == NOT || lToken->attribute == NOT)
-	{
-		advance();
-		expression();
-		eL();
-	}
-	else if(lToken->name == LPAREN || lToken->attribute == LPAREN)
-	{
-		advance();
-		expression();
-		match(RPAREN);
-		eL();
-	}
-
-	else if( lToken->name == ID || lToken->attribute == ID){
-		advance();
-		g();
-		eL();
-	}
-	else if(lToken->name == INTEGERCONSTANT || lToken->attribute == INTEGERCONSTANT
-		|| lToken->name == CHARCONSTANT || lToken->attribute == CHARCONSTANT
-		|| lToken->name == STRINGCONSTANT || lToken->attribute == STRINGCONSTANT)
-	{
-		advance();
-		eL();
-	}
-	else{
-		error("Expressão mal formulada");
-	}
+void Parser::parseArrayAccess() {
+  if (checkTokens(LBRACKET)) {
+    advanceToNextToken();
+    parseExpression();
+    consumeExpectedToken(RBRACKET);
+  }
 }
 
-void Parser::eL()
-{
-	// Checking if next token is in the first of BinOP
-	if(lToken->name == PLUS || lToken->attribute == PLUS
-	  || lToken->name == MINUS || lToken->attribute == MINUS
-	  || lToken->name == TIMES || lToken->attribute == TIMES
-	  || lToken->name == DIVIDED || lToken->attribute == DIVIDED	
-	)
-	{
-		advance();
-		eL();
-	}
-	// Checking if next token is in the first of Relop
-	else if(lToken->name == EQUIVALENT || lToken->attribute == EQUIVALENT
-			|| lToken->name == DIFF || lToken->attribute == DIFF
-			|| lToken->name == LE || lToken->attribute == LE
-			|| lToken->name == GE || lToken->attribute == GE
-			|| lToken->name == LT || lToken->attribute == LT
-			|| lToken->name == GT || lToken->attribute == GT
-		)
-		{
-			advance();
-			eL();
-		}
-	// Checking if next token is in the first of LogOp
-	else if(lToken->name == AND || lToken->attribute == AND
-			|| lToken->name == OR || lToken->attribute == OR
-	)
-	{
-		advance();
-		eL();
-	}
-	return;
-}	
-
-void Parser::binOp()
-{
-	// Checking if next token is in the first of BinOP
-	if(lToken->name == PLUS || lToken->attribute == PLUS
-	  || lToken->name == MINUS || lToken->attribute == MINUS
-	  || lToken->name == TIMES || lToken->attribute == TIMES
-	  || lToken->name == DIVIDED || lToken->attribute == DIVIDED	
-	)
-	{
-		advance();
-	}
-	else
-	{
-		error("Operador aritmético esperado");
-	}
-	return;
+void Parser::parseArgumentList() {
+  if (isStartOfExpression()) {
+    parseExpression();
+    parseMoreExpressions();
+  }
 }
 
-void Parser::relOp()
-{
-	// Checking if next token is in the first of Relop
-	if(lToken->name == EQUIVALENT || lToken->attribute == EQUIVALENT
-			|| lToken->name == DIFF || lToken->attribute == DIFF
-			|| lToken->name == LE || lToken->attribute == LE
-			|| lToken->name == GE || lToken->attribute == GE
-		)
-		{
-			advance();
-		}
-	else if(lToken->name == LT || lToken->attribute == LT
-			|| lToken->name == GT || lToken->attribute == GT)
-		{
-			advance();
-			rL();
-		}
-	else
-	{
-		error("Operador de comparação esperado");
-	}
-	return;
+void Parser::parseMoreExpressions() {
+  if (checkTokens(COMMA)) {
+    advanceToNextToken();
+    parseExpression();
+    parseMoreExpressions();
+  }
 }
 
-void Parser::rL()
-{
-	// Checking if next token is in the first of Relop'
-		if(lToken->name == ASSIGN || lToken->attribute == ASSIGN 
-		  || lToken->name == VOID || lToken->attribute == VOID){
-			advance();
-		}
-
-		return;
+void Parser::parseBinaryOperator() {
+  if (checkTokens(PLUS, MINUS, TIMES, DIVIDED)) {
+    advanceToNextToken();
+  } else {
+    error("Operador aritmético esperado");
+  }
 }
 
-void Parser::logOp()
-{
-	// Checking if next token is in the first of LogOp
-	if(lToken->name == AND || lToken->attribute == AND
-			|| lToken->name == OR || lToken->attribute == OR
-	)
-	{
-		advance();
-	}
-	else{
-		error("Operador AND ou OR esperado");
-	}
-	return;
+void Parser::parseRelationalOperator() {
+  if (checkTokens(EQUIVALENT, DIFF, LE, GE, LT, GT)) {
+    advanceToNextToken();
+  } else {
+    error("Operador de comparação esperado");
+  }
 }
 
-void
-Parser::error(string str)
-{
-	cout << "Linha " << scanner->getLine() << ": " << str << endl;
-
-	exit(EXIT_FAILURE);
+void Parser::parseLogicalOperator() {
+  if (checkTokens(AND, OR)) {
+    advanceToNextToken();
+  } else {
+    error("Operador AND ou OR esperado");
+  }
 }

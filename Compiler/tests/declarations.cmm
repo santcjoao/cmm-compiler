@@ -1,0 +1,8 @@
+int main(void) {
+    int x, y, z;
+    char c[10], d;
+    
+    x = 1;
+    y = 2;
+    z = 3;
+}

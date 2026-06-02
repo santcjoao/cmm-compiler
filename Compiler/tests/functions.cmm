@@ -1,0 +1,13 @@
+int soma(int a, int b) {
+    return a + b;
+}
+
+void print(int x) {
+    // dummy
+}
+
+void main(void) {
+    int res;
+    res = soma(10, 20);
+    print(res);
+}

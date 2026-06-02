@@ -1,49 +1,46 @@
-#include <fstream>
 #include "Token.h"
+#include <fstream>
 
-class Scanner 
-{
-    private: 
-        string input;   //  Armazena o texto de entrada
-        int pos;        //  Posição atual
-        int line;
-    
-    public:
-        //  Construtor
-        Scanner(string);
+class Scanner {
+private:
+  string input;
+  int pos;
+  int line;
+  int column;
+  int tokenLine;
+  int tokenColumn;
 
-        int getLine();
-    
-        //  Método que retorna o próximo token da entrada
-        Token* nextToken();        
-    
-        //  Método para manipular erros
-        void lexicalError(string);
+public:
+  Scanner(string);
 
-        /// Helpers de inspeção de estado
-        char nextPeek();
-        char currentPeek();
-        
-        bool isAtEnd();
-        void advance(int steps = 1);
-        
-        bool matchCurrent(char expected);
-        bool matchNext(char expected);
+  int getLine();
+  int getColumn();
+  int getTokenLine();
+  int getTokenColumn();
 
-        /// Helper para pular espaços e comentários
-        void skipWhitespaceAndComments();
+  void lexicalError(string);
+  char nextPeek();
+  char currentPeek();
 
-        /// Helpers de criação de tokens
-        string extractLexeme(int startPos, int endPos);
-        Token* makeToken(int name, int attribute = UNDEF, string lexeme = "");
+  bool isAtEnd();
+  void advance(int steps = 1);
 
-        /// Helpers de leitura de tokens
-        Token* readNumber();
+  bool matchCurrent(char expected);
+  bool matchNext(char expected);
 
-        Token* readCharLiteral();
-        Token* readStringLiteral();
-        Token* readIdentifierOrKeyword();
+  void skipWhitespaceAndComments();
 
-        Token* readOperator();
-        Token* readSeparator();
+  string getLineContent(int lineNumber);
+  string extractLexeme(int startPos, int endPos);
+
+  Token *nextToken();
+  Token *readNumber();
+
+  Token *readCharLiteral();
+  Token *readStringLiteral();
+  Token *readIdentifierOrKeyword();
+
+  Token *readOperator();
+  Token *readSeparator();
+  Token *makeToken(int name, int attribute = UNDEF, string lexeme = "");
 };
