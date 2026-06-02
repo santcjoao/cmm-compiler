@@ -348,11 +348,17 @@ void Parser::aL()
 void Parser::expression()
 {
 	if (lToken->name == MINUS || lToken->attribute == MINUS
-		|| lToken->name == NOT || lToken->attribute == NOT
-		|| lToken->name == LPAREN || lToken->attribute == LPAREN)
+		|| lToken->name == NOT || lToken->attribute == NOT)
 	{
 		advance();
 		expression();
+		eL();
+	}
+	else if(lToken->name == LPAREN || lToken->attribute == LPAREN)
+	{
+		advance();
+		expression();
+		match(RPAREN);
 		eL();
 	}
 
