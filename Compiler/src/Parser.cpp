@@ -405,10 +405,6 @@ void Parser::eL()
 		advance();
 		eL();
 	}
-	else
-	{
-		error("Erro, é esperado algum comparador");
-	}
 	return;
 }	
 
