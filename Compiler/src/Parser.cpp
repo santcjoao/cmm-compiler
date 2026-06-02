@@ -115,7 +115,19 @@ void Parser::f()
 
 void Parser::g()
 {
-	// TODO
+	if (lToken->name == LPAREN || lToken->attribute == LPAREN){
+		advance();
+		f();
+		match(RPAREN);
+
+	}
+	else if(lToken->name == LBRACKET || lToken->attribute == LBRACKET){
+		advance();
+		expression();
+		match(RBRACKET);
+	}
+
+	return;	
 }
 
 void Parser::h()
@@ -335,32 +347,137 @@ void Parser::aL()
 
 void Parser::expression()
 {
-	// TODO
+	if (lToken->name == MINUS || lToken->attribute == MINUS
+		|| lToken->name == NOT || lToken->attribute == NOT
+		|| lToken->name == LPAREN || lToken->attribute == LPAREN)
+	{
+		advance();
+		expression();
+		eL();
+	}
+
+	else if( lToken->name == ID || lToken->attribute == ID){
+		advance();
+		g();
+		eL();
+	}
+	else if(lToken->name == INTEGERCONSTANT || lToken->attribute == INTEGERCONSTANT
+		|| lToken->name == CHARCONSTANT || lToken->attribute == CHARCONSTANT
+		|| lToken->name == STRINGCONSTANT || lToken->attribute == STRINGCONSTANT)
+	{
+		advance();
+		eL();
+	}
+	else{
+		error("Expressão mal formulada");
+	}
 }
 
 void Parser::eL()
 {
-	// TODO
-}
+	// Checking if next token is in the first of BinOP
+	if(lToken->name == PLUS || lToken->attribute == PLUS
+	  || lToken->name == MINUS || lToken->attribute == MINUS
+	  || lToken->name == TIMES || lToken->attribute == TIMES
+	  || lToken->name == DIVIDED || lToken->attribute == DIVIDED	
+	)
+	{
+		advance();
+		eL();
+	}
+	// Checking if next token is in the first of Relop
+	else if(lToken->name == EQUIVALENT || lToken->attribute == EQUIVALENT
+			|| lToken->name == DIFF || lToken->attribute == DIFF
+			|| lToken->name == LE || lToken->attribute == LE
+			|| lToken->name == GE || lToken->attribute == GE
+			|| lToken->name == LT || lToken->attribute == LT
+			|| lToken->name == GT || lToken->attribute == GT
+		)
+		{
+			advance();
+			eL();
+		}
+	// Checking if next token is in the first of LogOp
+	else if(lToken->name == AND || lToken->attribute == AND
+			|| lToken->name == OR || lToken->attribute == OR
+	)
+	{
+		advance();
+		eL();
+	}
+	else
+	{
+		error("Erro, é esperado algum comparador");
+	}
+	return;
+}	
 
 void Parser::binOp()
 {
-	// TODO
+	// Checking if next token is in the first of BinOP
+	if(lToken->name == PLUS || lToken->attribute == PLUS
+	  || lToken->name == MINUS || lToken->attribute == MINUS
+	  || lToken->name == TIMES || lToken->attribute == TIMES
+	  || lToken->name == DIVIDED || lToken->attribute == DIVIDED	
+	)
+	{
+		advance();
+	}
+	else
+	{
+		error("Operador aritmético esperado");
+	}
+	return;
 }
 
 void Parser::relOp()
 {
-	// TODO
+	// Checking if next token is in the first of Relop
+	if(lToken->name == EQUIVALENT || lToken->attribute == EQUIVALENT
+			|| lToken->name == DIFF || lToken->attribute == DIFF
+			|| lToken->name == LE || lToken->attribute == LE
+			|| lToken->name == GE || lToken->attribute == GE
+		)
+		{
+			advance();
+		}
+	else if(lToken->name == LT || lToken->attribute == LT
+			|| lToken->name == GT || lToken->attribute == GT)
+		{
+			advance();
+			rL();
+		}
+	else
+	{
+		error("Operador de comparação esperado");
+	}
+	return;
 }
 
 void Parser::rL()
 {
-	// TODO
+	// Checking if next token is in the first of Relop'
+		if(lToken->name == ASSIGN || lToken->attribute == ASSIGN 
+		  || lToken->name == VOID || lToken->attribute == VOID){
+			advance();
+		}
+
+		return;
 }
 
 void Parser::logOp()
 {
-	// TODO
+	// Checking if next token is in the first of LogOp
+	if(lToken->name == AND || lToken->attribute == AND
+			|| lToken->name == OR || lToken->attribute == OR
+	)
+	{
+		advance();
+	}
+	else{
+		error("Operador AND ou OR esperado");
+	}
+	return;
 }
 
 void
