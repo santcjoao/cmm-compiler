@@ -1,16 +1,25 @@
 #include "../include/Parser.h"
 
-Parser::Parser(string input) { scanner = new Scanner(input); }
+Parser::Parser(string input) {
+  scanner = new Scanner(input);
+  errorCount = 0;
+}
 
 void Parser::run() {
   advanceToNextToken();
-  program();
-  cout << "Compilação encerrada.\n";
-}
+  try {
+    parseFunctionList();
+    consumeExpectedToken(END_OF_FILE);
+  } catch (const ParseError &e) {
+  }
 
-void Parser::program() {
-  parseFunctionList();
-  consumeExpectedToken(END_OF_FILE);
+  int totalErrors = errorCount + scanner->getErrorCount();
+  if (totalErrors > 0) {
+    cout << "Compilação falhou com " << totalErrors << " erro(s).\n";
+    exit(EXIT_FAILURE);
+  }
+
+  cout << "Compilação encerrada.\n";
 }
 
 void Parser::advanceToNextToken() { lToken = scanner->nextToken(); }
@@ -20,9 +29,7 @@ void Parser::consumeExpectedToken(int Token) {
     advanceToNextToken();
   } else {
     string expected = tokenToString(Token);
-    string found =
-        lToken->lexeme.empty() ? tokenToString(lToken->name) : lToken->lexeme;
-    error("esperado '" + expected + "', mas recebemos '" + found + "'");
+    error("esperado '" + expected + "'");
   }
 }
 
@@ -32,18 +39,14 @@ bool Parser::isStartOfExpression() {
 }
 
 bool Parser::isStartOfStatement() {
-  return (checkKeywords(IF, WHILE, FOR, RETURN) ||
-          checkTokens(ID, LBRACE, SEMICOLON));
+  return (checkTokens(ID, LBRACE, SEMICOLON));
 }
 
-void Parser::error(string str) {
+void Parser::reportError(string str) {
   int line = scanner->getTokenLine();
   int col = scanner->getTokenColumn();
 
-  string lexeme =
-      lToken->lexeme.empty() ? tokenToString(lToken->name) : lToken->lexeme;
-  cout << "arquivo.cmm:" << line << ":" << col << ": erro: " << str
-       << " (no token: '" << lexeme << "')\n";
+  cout << "arquivo.cmm:" << line << ":" << col << ": erro sintático: " << str << "\n";
 
   string sourceLine = scanner->getLineContent(line);
   if (!sourceLine.empty()) {
@@ -52,18 +55,40 @@ void Parser::error(string str) {
     cout << string(offset, ' ') << "^\n";
   }
 
-  exit(EXIT_FAILURE);
+  errorCount++;
+}
+
+void Parser::error(string str) {
+  reportError(str);
+  throw ParseError(str);
+}
+
+void Parser::synchronize() {
+  while (lToken->name != END_OF_FILE) {
+    if (checkTokens(ID, LBRACE, RBRACE)) {
+      return;
+    }
+    if (lToken->name == SEMICOLON) {
+      advanceToNextToken();
+      return;
+    }
+    advanceToNextToken();
+  }
 }
 
 void Parser::parseFunctionList() {
-  if (checkKeywords(VOID, CHAR, INT)) {
-    parseFunction();
+  if (checkLexemes("void", "char", "int")) {
+    try {
+      parseFunction();
+    } catch (const ParseError &e) {
+      synchronize();
+    }
     parseFunctionList();
   }
 }
 
 void Parser::parseFunction() {
-  if (checkKeywords(VOID))
+  if (checkLexemes("void"))
     advanceToNextToken();
   else
     parseType();
@@ -78,15 +103,15 @@ void Parser::parseFunction() {
 }
 
 void Parser::parseParamTypes() {
-  if (checkKeywords(VOID))
+  if (checkLexemes("void"))
     advanceToNextToken();
-  else if (checkKeywords(CHAR, INT)) {
+  else if (checkLexemes("char", "int")) {
     advanceToNextToken();
     consumeExpectedToken(ID);
     parseArrayBrackets();
     parseMoreParameters();
   } else
-    error("Tipo ou 'void' esperado");
+    error("tipo de retorno inválido (esperado 'int', 'char' ou 'void')");
 }
 
 void Parser::parseMoreParameters() {
@@ -100,18 +125,22 @@ void Parser::parseMoreParameters() {
 }
 
 void Parser::parseType() {
-  if (checkKeywords(CHAR, INT))
+  if (checkLexemes("char", "int"))
     advanceToNextToken();
   else
-    error("Tipo (char, int) esperado");
+    error("tipo de dado inválido (esperado 'int' ou 'char')");
 }
 
 void Parser::parseLocalDeclarations() {
-  if (checkKeywords(CHAR, INT)) {
-    parseType();
-    parseVariableDeclaration();
-    parseMoreVariables();
-    consumeExpectedToken(SEMICOLON);
+  if (checkLexemes("char", "int")) {
+    try {
+      parseType();
+      parseVariableDeclaration();
+      parseMoreVariables();
+      consumeExpectedToken(SEMICOLON);
+    } catch (const ParseError &e) {
+      synchronize();
+    }
     parseLocalDeclarations();
   }
 }
@@ -145,20 +174,20 @@ void Parser::parseArrayBrackets() {
 }
 
 void Parser::parseStatement() {
-  if (checkKeywords(IF)) {
+  if (checkLexemes("if")) {
     advanceToNextToken();
     consumeExpectedToken(LPAREN);
     parseExpression();
     consumeExpectedToken(RPAREN);
     parseStatement();
     parseOptionalElse();
-  } else if (checkKeywords(WHILE)) {
+  } else if (checkLexemes("while")) {
     advanceToNextToken();
     consumeExpectedToken(LPAREN);
     parseExpression();
     consumeExpectedToken(RPAREN);
     parseStatement();
-  } else if (checkKeywords(FOR)) {
+  } else if (checkLexemes("for")) {
     advanceToNextToken();
     consumeExpectedToken(LPAREN);
     parseOptionalAssignment();
@@ -168,15 +197,15 @@ void Parser::parseStatement() {
     parseOptionalAssignment();
     consumeExpectedToken(RPAREN);
     parseStatement();
-  } else if (checkKeywords(RETURN)) {
+  } else if (checkLexemes("return")) {
     advanceToNextToken();
     parseOptionalExpression();
     consumeExpectedToken(SEMICOLON);
+  } else if (checkLexemes("int", "char")) {
+    reportError("declarações de variáveis devem vir antes das "
+                "instruções/comandos do bloco");
+    parseLocalDeclarations();
   } else if (checkTokens(ID)) {
-    if (checkKeywords(CHAR, INT, VOID)) {
-      error("Declarações de variáveis devem vir antes das instruções/comandos "
-            "do bloco");
-    }
     advanceToNextToken();
     parseAssignmentOrCall();
   } else if (checkTokens(LBRACE)) {
@@ -186,18 +215,22 @@ void Parser::parseStatement() {
   } else if (checkTokens(SEMICOLON))
     advanceToNextToken();
   else
-    error("Statement (comando) inválido");
+    error("início de instrução inválido");
 }
 
 void Parser::parseStatementList() {
   if (isStartOfStatement()) {
-    parseStatement();
+    try {
+      parseStatement();
+    } catch (const ParseError &e) {
+      synchronize();
+    }
     parseStatementList();
   }
 }
 
 void Parser::parseOptionalElse() {
-  if (checkKeywords(ELSE)) {
+  if (checkLexemes("else")) {
     advanceToNextToken();
     parseStatement();
   }
@@ -228,7 +261,8 @@ void Parser::parseAssignmentOrCall() {
     parseExpression();
     consumeExpectedToken(SEMICOLON);
   } else
-    error("Atribuição ou chamada de função esperada");
+    error("esperada atribuição ('=') ou chamada de função ('(') após o "
+          "identificador");
 }
 
 void Parser::parseExpression() {
@@ -249,9 +283,7 @@ void Parser::parseExpression() {
     advanceToNextToken();
     parseExpressionTail();
   } else {
-    string found =
-        lToken->lexeme.empty() ? tokenToString(lToken->name) : lToken->lexeme;
-    error("Expressão mal formulada (token inesperado: '" + found + "')");
+    error("expressão inválida ou incompleta");
   }
 }
 
@@ -316,7 +348,7 @@ void Parser::parseBinaryOperator() {
   if (checkTokens(PLUS, MINUS, TIMES, DIVIDED)) {
     advanceToNextToken();
   } else {
-    error("Operador aritmético esperado");
+    error("operador aritmético esperado ('+', '-', '*', '/')");
   }
 }
 
@@ -324,7 +356,7 @@ void Parser::parseRelationalOperator() {
   if (checkTokens(EQUIVALENT, DIFF, LE, GE, LT, GT)) {
     advanceToNextToken();
   } else {
-    error("Operador de comparação esperado");
+    error("operador relacional esperado ('==', '!=', '<', '>', '<=', '>=')");
   }
 }
 
@@ -332,6 +364,6 @@ void Parser::parseLogicalOperator() {
   if (checkTokens(AND, OR)) {
     advanceToNextToken();
   } else {
-    error("Operador AND ou OR esperado");
+    error("operador lógico esperado ('&&', '||')");
   }
 }

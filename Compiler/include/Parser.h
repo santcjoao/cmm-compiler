@@ -2,39 +2,46 @@
 #define __Parser_h
 
 #include "Scanner.h"
+#include <stdexcept>
+
+class ParseError : public std::runtime_error {
+public:
+  ParseError(const string &msg) : std::runtime_error(msg) {}
+};
 
 class Parser {
+public:
+  Parser(string);
+  void run();
+
 private:
   Scanner *scanner;
   Token *lToken;
+  int errorCount;
 
-  void advanceToNextToken();
-  void consumeExpectedToken(int);
-  void error(string);
-
-  bool isStartOfStatement();
-  bool isStartOfExpression();
-
-  inline bool checkSingleToken(int Token) {
-    return (lToken->name == Token || lToken->attribute == Token);
-  }
+  inline bool checkSingleToken(int Token) { return (lToken->name == Token); }
 
   template <typename... Tokens> bool checkTokens(Tokens... tokens) {
     return (checkSingleToken(tokens) || ...);
   }
 
-  inline bool checkSingleKeyword(int kw) {
-    return (lToken->name == ID && lToken->attribute == kw);
+  inline bool checkLexeme(string str) {
+    return (lToken->name == ID && lToken->lexeme == str);
   }
 
-  template <typename... Keywords> bool checkKeywords(Keywords... kws) {
-    return (checkSingleKeyword(kws) || ...);
+  template <typename... Strings> bool checkLexemes(Strings... strs) {
+    return (checkLexeme(strs) || ...);
   }
 
-public:
-  Parser(string);
-  void run();
-  void program();
+  void advanceToNextToken();
+  void consumeExpectedToken(int);
+
+  void reportError(string);
+  void error(string);
+  void synchronize();
+
+  bool isStartOfStatement();
+  bool isStartOfExpression();
 
   void parseFunctionList();
   void parseFunction();

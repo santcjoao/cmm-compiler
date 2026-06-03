@@ -1,3 +1,6 @@
+#ifndef __Scanner_h
+#define __Scanner_h
+
 #include "Token.h"
 #include <fstream>
 
@@ -9,6 +12,7 @@ private:
   int column;
   int tokenLine;
   int tokenColumn;
+  int errorCount;
 
 public:
   Scanner(string);
@@ -17,7 +21,13 @@ public:
   int getColumn();
   int getTokenLine();
   int getTokenColumn();
+  int getErrorCount();
 
+  string getLineContent(int lineNumber);
+
+  Token *nextToken();
+
+private:
   void lexicalError(string);
   char nextPeek();
   char currentPeek();
@@ -30,17 +40,17 @@ public:
 
   void skipWhitespaceAndComments();
 
-  string getLineContent(int lineNumber);
   string extractLexeme(int startPos, int endPos);
 
-  Token *nextToken();
+  Token *makeToken(int name, int attribute = UNDEF, string lexeme = "");
   Token *readNumber();
 
+  Token *readIdentifier();
   Token *readCharLiteral();
   Token *readStringLiteral();
-  Token *readIdentifierOrKeyword();
 
   Token *readOperator();
   Token *readSeparator();
-  Token *makeToken(int name, int attribute = UNDEF, string lexeme = "");
 };
+
+#endif

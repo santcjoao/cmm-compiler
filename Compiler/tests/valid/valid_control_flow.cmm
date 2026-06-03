@@ -1,0 +1,22 @@
+void main(void) {
+    int i;
+    int soma;
+    
+    soma = 0;
+    
+    if (soma == 0) {
+        soma = 1;
+    } else {
+        soma = 2;
+    }
+    
+    for (i = 0; i < 10; i = i + 1) {
+        soma = soma + i;
+    }
+    
+    while (soma > 0) {
+        soma = soma - 1;
+    }
+    
+    ; // comando vazio
+}

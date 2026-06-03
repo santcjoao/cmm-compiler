@@ -1,16 +1,12 @@
 #include "../include/Scanner.h"
 
-//  Construtor: Recebe o nome do arquivo de entrada, lê seu conteúdo e o
-//  armazena na variável input.
 Scanner::Scanner(string input) {
-  /*this->input = input;
-  cout << "Entrada: " << input << endl << "Tamanho: "
-       << input.length() << endl;*/
   pos = 0;
   line = 1;
   column = 1;
   tokenLine = 1;
   tokenColumn = 1;
+  errorCount = 0;
 
   ifstream inputFile(input, ios::in);
   string line;
@@ -22,17 +18,13 @@ Scanner::Scanner(string input) {
     inputFile.close();
   } else
     cout << "Unable to open file\n";
-
-  // A próxima linha deve ser comentada posteriormente.
-  // Ela é utilizada apenas para verificar se o
-  // preenchimento de input foi feito corretamente.
-  cout << this->input;
 }
 
 int Scanner::getLine() { return line; }
 int Scanner::getColumn() { return column; }
 int Scanner::getTokenLine() { return tokenLine; }
 int Scanner::getTokenColumn() { return tokenColumn; }
+int Scanner::getErrorCount() { return errorCount; }
 
 string Scanner::getLineContent(int lineNumber) {
   int current = 1;
@@ -53,9 +45,17 @@ string Scanner::getLineContent(int lineNumber) {
   return "";
 }
 void Scanner::lexicalError(string msg) {
-  cout << "Linha " << line << ": " << msg << endl;
+  cout << "arquivo.cmm:" << line << ":" << column << ": erro léxico: " << msg << "\n";
 
-  exit(EXIT_FAILURE);
+  string sourceLine = getLineContent(line);
+  if (!sourceLine.empty()) {
+    cout << "   " << line << " | " << sourceLine << "\n";
+    int offset =
+        3 + to_string(line).length() + 3 + (column > 0 ? column - 1 : 0);
+    cout << string(offset, ' ') << "^\n";
+  }
+
+  errorCount++;
 }
 
 Token *Scanner::nextToken() {
@@ -66,51 +66,44 @@ Token *Scanner::nextToken() {
   tokenLine = line;
   tokenColumn = column;
 
-  // 3. Inspeciona o caractere atual para decidir que token ler
   char c = currentPeek();
 
-  // Identificadores ou palavras-chave começam com letra
   if (isalpha(c)) {
-    return readIdentifierOrKeyword();
+    return readIdentifier();
   }
 
-  // Números começam com dígito
   if (isdigit(c)) {
     return readNumber();
   }
-
-  // Char literal começa com aspa simples
   if (c == '\'') {
-    return readCharLiteral();
+    Token *t = readCharLiteral();
+    return t ? t : nextToken();
   }
 
-  // String literal começa com aspa dupla
   if (c == '"') {
-    return readStringLiteral();
+    Token *t = readStringLiteral();
+    return t ? t : nextToken();
   }
 
-  // Operadores
   if (c == '+' || c == '-' || c == '*' || c == '/' || c == '=' || c == '!' ||
       c == '<' || c == '>' || c == '&' || c == '|') {
-    return readOperator();
+    Token *t = readOperator();
+    return t ? t : nextToken();
   }
-
-  // Separadores
   if (c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}' ||
       c == ',' || c == ';') {
-    return readSeparator();
+    Token *t = readSeparator();
+    return t ? t : nextToken();
   }
 
-  // Se não entrou em nenhum fallback conhecido, lança erro léxico
-  string msg = "Caractere não reconhecido: '";
+  string msg = "caractere não reconhecido: '";
   msg += c;
   msg += "'";
   lexicalError(msg);
-
-  return nullptr;
+  advance();
+  return nextToken();
 }
 
-// Boolean helpers para inspeção e correspondência de caracteres
 bool Scanner::isAtEnd() { return pos >= input.length(); }
 bool Scanner::matchCurrent(char expected) {
   if (isAtEnd())
@@ -129,7 +122,6 @@ bool Scanner::matchNext(char expected) {
   return true;
 }
 
-// Helpers para inspeção de caracteres
 char Scanner::currentPeek() {
   if (isAtEnd())
     return '\0';
@@ -154,7 +146,6 @@ void Scanner::advance(int steps) {
   }
 }
 
-// Helpers para criar tokens
 Token *Scanner::makeToken(int name, int attribute, string lexeme) {
   return new Token(name, attribute, lexeme);
 }
@@ -162,7 +153,6 @@ string Scanner::extractLexeme(int startPos, int endPos) {
   return input.substr(startPos, endPos - startPos);
 }
 
-// Helper para pular espaços e comentários
 void Scanner::skipWhitespaceAndComments() {
   while (true) {
     char c = currentPeek();
@@ -170,31 +160,25 @@ void Scanner::skipWhitespaceAndComments() {
     if (isspace(c)) {
       advance();
     } else if (c == '/' && nextPeek() == '/') {
-      // Single-line comment
-      advance(2); // Consume '//'
-
-      // Avança enquanto nao for quebra de linha e nao acabar
+      advance(2);
       while (!matchCurrent('\n') && !isAtEnd()) {
         advance();
       }
 
-      // Se fechou por quebra, consome o \n
       if (!isAtEnd()) {
         advance();
       }
     } else if (c == '/' && nextPeek() == '*') {
-      // Multi-line comment
-      advance(2); // Consume '/*'
+      advance(2);
 
-      // Continua pulando até achar '*/'
       while (!(matchCurrent('*') && matchNext('/')) && !isAtEnd()) {
         advance();
       }
 
       if (!isAtEnd()) {
-        advance(2); // Consume '*/'
+        advance(2);
       } else {
-        lexicalError("Comentário de bloco não fechado.");
+        lexicalError("comentário de bloco não fechado.");
       }
     } else {
       break;
@@ -202,7 +186,6 @@ void Scanner::skipWhitespaceAndComments() {
   }
 }
 
-// Helpers para leitura de tokens específicos
 Token *Scanner::readNumber() {
   int startPos = pos;
 
@@ -215,10 +198,9 @@ Token *Scanner::readNumber() {
 }
 Token *Scanner::readCharLiteral() {
   int startPos = pos;
-  advance(); // Consume a aspa simples de abertura '\''
+  advance();
 
-  if (matchCurrent('\\')) // Escape character
-  {
+  if (matchCurrent('\\')) {
     advance();
     if (matchCurrent('n')) {
       advance();
@@ -233,39 +215,40 @@ Token *Scanner::readCharLiteral() {
         return makeToken(CHARCONSTANT, B0, "\\0");
       }
     } else {
-      lexicalError("Tratamento de escape de caractere inválido.");
+      lexicalError("tratamento de escape de caractere inválido.");
+      return nullptr;
     }
   } else if (isprint(currentPeek()) && currentPeek() != '\'' &&
              currentPeek() != '\\') {
-    advance(); // Consome o caractere
+    advance();
     if (matchCurrent('\'')) {
-      advance(); // Consome a aspa final
+      advance();
       string lexeme = extractLexeme(startPos + 1, pos - 1);
       return makeToken(CHARCONSTANT, CH, lexeme);
     }
   }
 
-  lexicalError("Literal de caractere mal formado.");
+  lexicalError("literal de caractere mal formado.");
   return nullptr;
 }
 Token *Scanner::readStringLiteral() {
   int startPos = pos;
-  advance(); // Consume as aspas duplas de abertura '"'
+  advance();
 
   while (!isAtEnd() && currentPeek() != '"') {
     advance();
   }
 
   if (isAtEnd()) {
-    lexicalError("String não fechada antes do fim do arquivo.");
+    lexicalError("string não fechada antes do fim do arquivo.");
+    return nullptr;
   }
 
-  advance(); // Consume as aspas finais
-  // Extrai a string ignorando as aspas (inicial e final)
+  advance();
   string lexeme = extractLexeme(startPos + 1, pos - 1);
   return makeToken(STRINGCONSTANT, UNDEF, lexeme);
 }
-Token *Scanner::readIdentifierOrKeyword() {
+Token *Scanner::readIdentifier() {
   int startPos = pos;
 
   while (isalpha(currentPeek()) || isdigit(currentPeek()) ||
@@ -275,107 +258,96 @@ Token *Scanner::readIdentifierOrKeyword() {
 
   string lexeme = extractLexeme(startPos, pos);
 
-  if (lexeme == "void")   return makeToken(ID, VOID, lexeme);
-  if (lexeme == "int")    return makeToken(ID, INT, lexeme);
-  if (lexeme == "char")   return makeToken(ID, CHAR, lexeme);
-  if (lexeme == "if")     return makeToken(ID, IF, lexeme);
-  if (lexeme == "else")   return makeToken(ID, ELSE, lexeme);
-  if (lexeme == "while")  return makeToken(ID, WHILE, lexeme);
-  if (lexeme == "for")    return makeToken(ID, FOR, lexeme);
-  if (lexeme == "return") return makeToken(ID, RETURN, lexeme);
-
   return makeToken(ID, UNDEF, lexeme);
 }
 Token *Scanner::readOperator() {
-  int startPos = pos;
   char c = currentPeek();
-  advance(); // consome o primeiro char do operador
+  advance();
 
   switch (c) {
   case '+':
-    return makeToken(OPERATOR, PLUS, "+");
+    return makeToken(PLUS, UNDEF, "+");
   case '-':
-    return makeToken(OPERATOR, MINUS, "-");
+    return makeToken(MINUS, UNDEF, "-");
   case '*':
-    return makeToken(OPERATOR, TIMES, "*");
+    return makeToken(TIMES, UNDEF, "*");
   case '/':
-    return makeToken(OPERATOR, DIVIDED, "/");
+    return makeToken(DIVIDED, UNDEF, "/");
 
   case '=':
     if (matchCurrent('=')) {
       advance();
-      return makeToken(OPERATOR, EQUIVALENT, "==");
+      return makeToken(EQUIVALENT, UNDEF, "==");
     }
-    return makeToken(OPERATOR, ASSIGN, "=");
+    return makeToken(ASSIGN, UNDEF, "=");
 
   case '!':
     if (matchCurrent('=')) {
       advance();
-      return makeToken(OPERATOR, DIFF, "!=");
+      return makeToken(DIFF, UNDEF, "!=");
     }
-    return makeToken(OPERATOR, NOT, "!");
+    return makeToken(NOT, UNDEF, "!");
 
   case '<':
     if (matchCurrent('=')) {
       advance();
-      return makeToken(OPERATOR, LE, "<=");
+      return makeToken(LE, UNDEF, "<=");
     }
-    return makeToken(OPERATOR, LT, "<");
+    return makeToken(LT, UNDEF, "<");
 
   case '>':
     if (matchCurrent('=')) {
       advance();
-      return makeToken(OPERATOR, GE, ">=");
+      return makeToken(GE, UNDEF, ">=");
     }
-    return makeToken(OPERATOR, GT, ">");
+    return makeToken(GT, UNDEF, ">");
 
   case '&':
     if (matchCurrent('&')) {
       advance();
-      return makeToken(OPERATOR, AND, "&&");
+      return makeToken(AND, UNDEF, "&&");
     }
-    lexicalError("Operador '&' incompleto.");
+    lexicalError("operador '&' incompleto.");
     break;
 
   case '|':
     if (matchCurrent('|')) {
       advance();
-      return makeToken(OPERATOR, OR, "||");
+      return makeToken(OR, UNDEF, "||");
     }
-    lexicalError("Operador '|' incompleto.");
+    lexicalError("operador '|' incompleto.");
     break;
 
   default:
-    lexicalError("Operador não reconhecido.");
+    lexicalError("operador não reconhecido.");
     break;
   }
 
   return nullptr;
 }
 Token *Scanner::readSeparator() {
-  int startPos = pos;
   char c = currentPeek();
-  advance(); // Consome o separador
+  advance();
 
   switch (c) {
   case '(':
-    return makeToken(SEPARATOR, LPAREN, "(");
+    return makeToken(LPAREN, UNDEF, "(");
   case ')':
-    return makeToken(SEPARATOR, RPAREN, ")");
+    return makeToken(RPAREN, UNDEF, ")");
   case '[':
-    return makeToken(SEPARATOR, LBRACKET, "[");
+    return makeToken(LBRACKET, UNDEF, "[");
   case ']':
-    return makeToken(SEPARATOR, RBRACKET, "]");
+    return makeToken(RBRACKET, UNDEF, "]");
   case '{':
-    return makeToken(SEPARATOR, LBRACE, "{");
+    return makeToken(LBRACE, UNDEF, "{");
   case '}':
-    return makeToken(SEPARATOR, RBRACE, "}");
+    return makeToken(RBRACE, UNDEF, "}");
   case ',':
-    return makeToken(SEPARATOR, COMMA, ",");
+    return makeToken(COMMA, UNDEF, ",");
   case ';':
-    return makeToken(SEPARATOR, SEMICOLON, ";");
+    return makeToken(SEMICOLON, UNDEF, ";");
   default:
-    lexicalError("Separador não reconhecido.");
+    lexicalError("separador não reconhecido.");
     break;
   }
 
