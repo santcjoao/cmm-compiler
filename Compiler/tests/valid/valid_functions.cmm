@@ -1,0 +1,16 @@
+int somar(int a, int b) {
+    return a + b;
+}
+
+void processar(char buffer[], int tamanho) {
+    int i;
+    i = 0;
+}
+
+void main(void) {
+    int resultado;
+    char dados[10];
+    
+    resultado = somar(5, 10);
+    processar(dados, 10);
+}

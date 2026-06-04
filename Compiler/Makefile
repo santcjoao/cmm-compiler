@@ -1,7 +1,7 @@
 CXX = g++
 CXXFLAGS = -I. -g -std=c++20
 
-SRC = Main.cpp src/Scanner.cpp
+SRC = Main.cpp src/Scanner.cpp src/Parser.cpp
 BUILD_DIR = build
 
 OBJ = $(SRC:%.cpp=$(BUILD_DIR)/%.o)
