@@ -7,6 +7,17 @@
 
 using namespace std;
 
+enum Keywords {
+  VOID,
+  CHAR,
+  INT,
+  IF,
+  ELSE,
+  WHILE,
+  FOR,
+  RETURN
+};
+
 enum Names {
   UNDEF,
   ID,
@@ -110,6 +121,7 @@ public:
 
   Token(int name, int attr = UNDEF, string l = "")
       : name(name), attribute(attr), lexeme(l) {}
+  Token(int name, string l) : name(name), attribute(UNDEF), lexeme(l) {}
 };
 
 #endif

@@ -2,6 +2,7 @@
 #define __Parser_h
 
 #include "Scanner.h"
+#include "symboltable.h"
 #include <stdexcept>
 
 class ParseError : public std::runtime_error {
@@ -17,7 +18,11 @@ public:
 private:
   Scanner *scanner;
   Token *lToken;
+  SymbolTable* globalST;
+  SymbolTable* currentST;
   int errorCount;
+
+  void initSimbolTable();
 
   inline bool checkSingleToken(int Token) { return (lToken->name == Token); }
 

@@ -1,8 +1,35 @@
 #include "../include/Parser.h"
 
 Parser::Parser(string input) {
-  scanner = new Scanner(input);
+  currentST = globalST = new SymbolTable();
+  initSimbolTable();
+  scanner = new Scanner(input, globalST);
   errorCount = 0;
+}
+
+void Parser::initSimbolTable() {
+  Token* t;
+
+  t = new Token(VOID, "void");
+  globalST->add(new STEntry(t, true));
+  t = new Token(CHAR, "char");
+  globalST->add(new STEntry(t, true));
+  t = new Token(INT, "int");
+  globalST->add(new STEntry(t, true));
+  t = new Token(IF, "if");
+  globalST->add(new STEntry(t, true));
+  t = new Token(ELSE, "else");
+  globalST->add(new STEntry(t, true));
+  t = new Token(WHILE, "while");
+  globalST->add(new STEntry(t, true));
+  t = new Token(FOR, "for");
+  globalST->add(new STEntry(t, true));
+  t = new Token(RETURN, "return");
+  globalST->add(new STEntry(t, true));
+
+  globalST->add(new STEntry(new Token(ID, 0, "void"), "void"));
+  globalST->add(new STEntry(new Token(ID, 0, "char"), "char"));
+  globalST->add(new STEntry(new Token(ID, 0, "int"), "int"));
 }
 
 void Parser::run() {

@@ -2,6 +2,7 @@
 #define __Scanner_h
 
 #include "Token.h"
+#include "symboltable.h"
 #include <fstream>
 
 class Scanner {
@@ -13,9 +14,10 @@ private:
   int tokenLine;
   int tokenColumn;
   int errorCount;
+  SymbolTable* st;
 
 public:
-  Scanner(string);
+  Scanner(string, SymbolTable*);
 
   int getLine();
   int getColumn();

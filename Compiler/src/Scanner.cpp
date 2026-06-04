@@ -1,12 +1,15 @@
 #include "../include/Scanner.h"
+#include "../include/stentry.h"
 
-Scanner::Scanner(string input) {
+Scanner::Scanner(string input, SymbolTable *table) {
   pos = 0;
   line = 1;
   column = 1;
   tokenLine = 1;
   tokenColumn = 1;
   errorCount = 0;
+
+  st = table;
 
   ifstream inputFile(input, ios::in);
   string line;
@@ -257,8 +260,11 @@ Token *Scanner::readIdentifier() {
   }
 
   string lexeme = extractLexeme(startPos, pos);
-
-  return makeToken(ID, UNDEF, lexeme);
+  STEntry* obj = st->get(lexeme);
+  if (!obj)
+    return makeToken(ID, UNDEF, lexeme);
+  else
+    return makeToken(obj->token->name, UNDEF, lexeme);
 }
 Token *Scanner::readOperator() {
   char c = currentPeek();
