@@ -26,10 +26,6 @@ void Parser::initSimbolTable() {
   globalST->add(new STEntry(t, true));
   t = new Token(RETURN, "return");
   globalST->add(new STEntry(t, true));
-
-  globalST->add(new STEntry(new Token(ID, 0, "void"), "void"));
-  globalST->add(new STEntry(new Token(ID, 0, "char"), "char"));
-  globalST->add(new STEntry(new Token(ID, 0, "int"), "int"));
 }
 
 void Parser::run() {
@@ -115,7 +111,6 @@ void Parser::parseFunctionList() {
 }
 
 void Parser::parseFunction() {
-
   if (checkLexemes("void"))
     advanceToNextToken();
   else
@@ -123,8 +118,7 @@ void Parser::parseFunction() {
   Token* idToken = lToken;
   consumeExpectedToken(ID);
   currentST->add(new STEntry(idToken, false));
-  currentST = new SymbolTable(currentST);
-  scanner->setSymbolTable(currentST);
+  createNewContext();
   consumeExpectedToken(LPAREN);
   parseParamTypes();
   consumeExpectedToken(RPAREN);
@@ -132,8 +126,7 @@ void Parser::parseFunction() {
   parseLocalDeclarations();
   parseStatementList();
   consumeExpectedToken(RBRACE);
-  currentST = currentST->getParent();
-  scanner->setSymbolTable(currentST);
+  backToPreviousContext();
 }
 
 void Parser::parseParamTypes() {
@@ -217,19 +210,24 @@ void Parser::parseStatement() {
   if (checkLexemes("if")) {
     advanceToNextToken();
     consumeExpectedToken(LPAREN);
+    createNewContext();
     parseExpression();
     consumeExpectedToken(RPAREN);
     parseStatement();
     parseOptionalElse();
+    backToPreviousContext();
   } else if (checkLexemes("while")) {
     advanceToNextToken();
     consumeExpectedToken(LPAREN);
+    createNewContext();
     parseExpression();
     consumeExpectedToken(RPAREN);
     parseStatement();
+    backToPreviousContext();
   } else if (checkLexemes("for")) {
     advanceToNextToken();
     consumeExpectedToken(LPAREN);
+    createNewContext();
     parseOptionalAssignment();
     consumeExpectedToken(SEMICOLON);
     parseOptionalExpression();
@@ -237,6 +235,7 @@ void Parser::parseStatement() {
     parseOptionalAssignment();
     consumeExpectedToken(RPAREN);
     parseStatement();
+    backToPreviousContext();
   } else if (checkLexemes("return")) {
     advanceToNextToken();
     parseOptionalExpression();
@@ -246,21 +245,23 @@ void Parser::parseStatement() {
                 "instruções/comandos do bloco");
     parseLocalDeclarations();
   } else if (checkTokens(ID)) {
+    Token* idToken = lToken;
+    currentST->add(new STEntry(idToken, false));
     advanceToNextToken();
     parseAssignmentOrCall();
   } else if (checkTokens(LBRACE)) {
+    createNewContext();
     advanceToNextToken();
-    currentST = new SymbolTable(currentST);
-    scanner->setSymbolTable(currentST);
     parseStatementList();
     consumeExpectedToken(RBRACE);
-    currentST = currentST->getParent();
-    scanner->setSymbolTable(currentST);
+    backToPreviousContext();
   } else if (checkTokens(SEMICOLON))
     advanceToNextToken();
   else
     error("início de instrução inválido");
 }
+
+
 
 void Parser::parseStatementList() {
   if (isStartOfStatement()) {
@@ -322,6 +323,8 @@ void Parser::parseExpression() {
     consumeExpectedToken(RPAREN);
     parseExpressionTail();
   } else if (checkTokens(ID)) {
+    Token* idToken = lToken;
+    currentST->add(new STEntry(idToken, false));
     advanceToNextToken();
     parseIdentifierSuffix();
     parseExpressionTail();

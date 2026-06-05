@@ -1,3 +1,6 @@
+#ifndef __SymbolTable_h
+#define __SymbolTable_h
+
 #include <map>
 #include "stentry.h"
 
@@ -22,3 +25,4 @@ class SymbolTable
         STEntry* get(string);
         SymbolTable* getParent();
 };
+#endif

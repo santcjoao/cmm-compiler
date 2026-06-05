@@ -2,7 +2,7 @@
 #define __Parser_h
 
 #include "Scanner.h"
-#include "symboltable.h"
+#include "SymbolTable.h"
 #include <stdexcept>
 
 class ParseError : public std::runtime_error {
@@ -77,6 +77,19 @@ private:
   void parseBinaryOperator();
   void parseRelationalOperator();
   void parseLogicalOperator();
+  
+
+  void createNewContext() {
+    currentST = new SymbolTable(currentST);
+    scanner->setSymbolTable(currentST);
+  }
+
+  void backToPreviousContext() {
+    if (currentST->getParent()) {
+      currentST = currentST->getParent();
+      scanner->setSymbolTable(currentST);
+    }
+  }
 };
 
 #endif

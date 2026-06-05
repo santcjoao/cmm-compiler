@@ -1,4 +1,7 @@
-#include "token.h"
+#ifndef __STEntry_h
+#define __STEntry_h
+
+#include "Token.h"
 
 class STEntry 
 {
@@ -10,3 +13,4 @@ class STEntry
         STEntry(Token*);   
         STEntry(Token*, bool);
 };
+#endif

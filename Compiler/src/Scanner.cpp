@@ -1,5 +1,5 @@
 #include "../include/Scanner.h"
-#include "../include/stentry.h"
+#include "../include/STEntry.h"
 
 Scanner::Scanner(string input, SymbolTable *table) {
   pos = 0;
@@ -262,9 +262,9 @@ Token *Scanner::readIdentifier() {
   string lexeme = extractLexeme(startPos, pos);
   STEntry* obj = st->get(lexeme);
   if (!obj)
-    return makeToken(ID, UNDEF, lexeme);
+    return makeToken(ID, UNDEF, lexeme); // variable
   else
-    return makeToken(obj->token->name, UNDEF, lexeme);
+    return makeToken(obj->token->name, UNDEF, lexeme); // reserved
 }
 Token *Scanner::readOperator() {
   char c = currentPeek();
