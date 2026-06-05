@@ -29,6 +29,8 @@ public:
 
   Token *nextToken();
 
+  void setSymbolTable(SymbolTable *table);
+
 private:
   void lexicalError(string);
   char nextPeek();

@@ -115,11 +115,16 @@ void Parser::parseFunctionList() {
 }
 
 void Parser::parseFunction() {
+
   if (checkLexemes("void"))
     advanceToNextToken();
   else
     parseType();
+  Token* idToken = lToken;
   consumeExpectedToken(ID);
+  currentST->add(new STEntry(idToken, false));
+  currentST = new SymbolTable(currentST);
+  scanner->setSymbolTable(currentST);
   consumeExpectedToken(LPAREN);
   parseParamTypes();
   consumeExpectedToken(RPAREN);
@@ -127,6 +132,8 @@ void Parser::parseFunction() {
   parseLocalDeclarations();
   parseStatementList();
   consumeExpectedToken(RBRACE);
+  currentST = currentST->getParent();
+  scanner->setSymbolTable(currentST);
 }
 
 void Parser::parseParamTypes() {
@@ -134,7 +141,9 @@ void Parser::parseParamTypes() {
     advanceToNextToken();
   else if (checkLexemes("char", "int")) {
     advanceToNextToken();
+    Token* idToken = lToken;
     consumeExpectedToken(ID);
+    currentST->add(new STEntry(idToken, false));
     parseArrayBrackets();
     parseMoreParameters();
   } else
@@ -145,7 +154,9 @@ void Parser::parseMoreParameters() {
   if (checkTokens(COMMA)) {
     advanceToNextToken();
     parseType();
+    Token* idToken = lToken;
     consumeExpectedToken(ID);
+    currentST->add(new STEntry(idToken, false));
     parseArrayBrackets();
     parseMoreParameters();
   }
@@ -173,7 +184,9 @@ void Parser::parseLocalDeclarations() {
 }
 
 void Parser::parseVariableDeclaration() {
+  Token* idToken = lToken;
   consumeExpectedToken(ID);
+  currentST->add(new STEntry(idToken, false));
   parseArraySize();
 }
 
@@ -237,8 +250,12 @@ void Parser::parseStatement() {
     parseAssignmentOrCall();
   } else if (checkTokens(LBRACE)) {
     advanceToNextToken();
+    currentST = new SymbolTable(currentST);
+    scanner->setSymbolTable(currentST);
     parseStatementList();
     consumeExpectedToken(RBRACE);
+    currentST = currentST->getParent();
+    scanner->setSymbolTable(currentST);
   } else if (checkTokens(SEMICOLON))
     advanceToNextToken();
   else
@@ -270,7 +287,9 @@ void Parser::parseOptionalAssignment() {
 }
 
 void Parser::parseAssignment() {
+  Token* idToken = lToken;
   consumeExpectedToken(ID);
+  currentST->add(new STEntry(idToken, false));
   parseArrayAccess();
   consumeExpectedToken(ASSIGN);
   parseExpression();

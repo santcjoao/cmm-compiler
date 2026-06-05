@@ -359,3 +359,7 @@ Token *Scanner::readSeparator() {
 
   return nullptr;
 }
+
+void Scanner::setSymbolTable(SymbolTable *table) {
+    this->st = table;
+}
