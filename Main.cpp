@@ -26,9 +26,9 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  Logger logger(source);
-  Scanner scanner(source, &logger);
-  Parser parser(&scanner, &logger);
+  Logger logger{source};
+  Scanner scanner{source, &logger};
+  Parser parser{&scanner, &logger};
   parser.run();
 
   if (logger.hasErrors()) {
