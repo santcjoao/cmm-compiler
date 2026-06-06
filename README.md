@@ -1,68 +1,45 @@
 # Compilador C--
 
-Implementação de um compilador para a linguagem C--. O processo inclui análise léxica, sintática e semântica, com emissão de diagnósticos detalhados.
+Compilador para a linguagem C-- com análise léxica, sintática e semântica.
 
-## Estrutura do Projeto
+## Estrutura do Código-Fonte
 
-```
+```text
 .
-├── Main.cpp                    # Ponto de entrada do programa
-├── Makefile                    # Build system (Linux / macOS / Windows)
-├── include/                    # Headers (.h)
-│   ├── Token.h                 # Definição dos tokens e tipos
-│   ├── SourceFile.h            # Carregamento do arquivo fonte
-│   ├── Logger.h                # Sistema de diagnósticos (erros/avisos)
+├── Main.cpp                    # Ponto de entrada
+├── Makefile                    # Script de compilação
+├── include/                    # Arquivos de cabeçalho (.h)
+│   ├── Logger.h                # Sistema de diagnósticos
+│   ├── Parser.h                # Analisador sintático/semântico
 │   ├── Scanner.h               # Analisador léxico
-│   ├── SymbolTable.h           # Tabela de símbolos
-│   └── Parser.h                # Analisador sintático/semântico
-├── src/                        # Implementações (.cpp)
-│   ├── SourceFile.cpp
-│   ├── Logger.cpp
-│   ├── Scanner.cpp
-│   ├── SymbolTable.cpp
-│   └── Parser.cpp
-├── tests/                      # Programas de teste em C--
-│   ├── valid/                  # Programas válidos (devem compilar sem erros)
-│   └── invalid/                # Programas inválidos (devem gerar erros)
-└── compiler                    # Executável gerado pelo make (Linux/macOS)
-    (ou compiler.exe no Windows)
+│   ├── SourceFile.h            # Leitura do arquivo de entrada
+│   ├── SymbolTable.h           # Tabela de símbolos e escopos
+│   └── Token.h                 # Definição da estrutura de tokens
+└── src/                        # Implementações (.cpp)
+    ├── Logger.cpp
+    ├── Parser.cpp
+    ├── Scanner.cpp
+    ├── SourceFile.cpp
+    └── SymbolTable.cpp
 ```
-## Como Compilar
 
-A compilação é gerenciada via `make`. É necessário um compilador compatível com C++17. O Makefile é universal e compatível com Linux, macOS e Windows (nativo, MSYS2 ou WSL).
+## Compilação
 
-- **Gerar o executável:**
-  ```bash
-  make
-  ```
-- **Limpar artefatos de compilação:**
-  ```bash
-  make clean
-  ```
+O build é gerenciado pelo utilitário `make` e exige suporte a **C++17**.
 
-## Como Executar
+- **Linux / macOS**: Execute `make` no terminal. O executável `compiler` será gerado.
+- **Windows**: Execute `make`. O arquivo `compiler.exe` será gerado.
 
-A chamada do compilador exige o caminho para o arquivo fonte alvo:
+Para remover os artefatos de compilação, utilize `make clean`.
+
+## Execução
 
 ```bash
+# Linux / macOS
 ./compiler <arquivo.cmm>
-```
-(No Windows, utilize `compiler.exe <arquivo.cmm>`)
 
-
-## Saídas
-
-A saída relata sucesso ou exibe diagnósticos indicando arquivo, linha, coluna e trecho de código afetado (em formato semelhante ao GCC).
-
-**Execução bem-sucedida:**
-```text
-Compilação encerrada com sucesso.
+# Windows
+./compiler.exe <arquivo.cmm>
 ```
 
-**Execução com falhas:**
-```text
-tests/invalid/chaos.cmm:15:8: erro: esperado '('
-   15 |     if a == 5) { 
-      |        ^
-Compilação falhou com 1 erro(s).
-```
+Em caso de falha, os diagnósticos são exibidos no formato padrão GCC (`arquivo:linha:coluna: erro/aviso`), apontando a posição exata do código afetado.
