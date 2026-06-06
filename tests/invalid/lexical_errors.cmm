@@ -1,0 +1,14 @@
+void teste_lexico() {
+    int x;
+    x = 10;
+    
+    // Erro 1: Caractere totalmente proibido e desconhecido
+    x = x + @; 
+    
+    char c;
+    // Erro 2: Escape de caractere inválido (só suportamos \n e \0)
+    c = '\x'; 
+    
+    // Erro 3: String que esqueceu de fechar antes do newline/EOF
+    x = "essa string nunca fecha
+}

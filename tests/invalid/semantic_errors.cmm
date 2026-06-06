@@ -1,0 +1,17 @@
+int variavel_global;
+// Erro 1: Dupla declaração no mesmo escopo
+int variavel_global; 
+
+void funcao1() {
+    int x;
+    // Erro 2: Dupla declaração local
+    int x; 
+    
+    // Erro 3: Uso de variável fantasma (nunca foi declarada)
+    fantasma = 10; 
+}
+
+void funcao2() {
+    // Erro 4: Escopos isolados. 'x' pertence a funcao1 e não existe aqui.
+    x = 5; 
+}

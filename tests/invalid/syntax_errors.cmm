@@ -1,0 +1,14 @@
+int syntax_test() {
+    int a;
+    
+    // Erro 1: Omitiu ponto e vírgula
+    a = 5 
+    
+    // Erro 2: Esqueceu de fechar parenteses do if
+    if (a > 3 { 
+        // Erro 3: Expressão totalmente bizarra/mal formada (operador sem operando)
+        a = a + * 5; 
+    }
+    
+    return a;
+}

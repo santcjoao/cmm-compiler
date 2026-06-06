@@ -1,4 +1,0 @@
-void main(void) {
-    char s[20];
-    s = "string sem fechar;
-}

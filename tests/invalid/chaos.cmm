@@ -1,0 +1,31 @@
+int global;
+// SEMÂNTICO: Dupla declaração
+int global; 
+
+void main() {
+    int a;
+    
+    // SINTÁTICO: Falta ';'
+    a = 5 
+    
+    // LÉXICO (@ não existe) + SEMÂNTICO (b não foi declarada)
+    b = @; 
+    
+    // SINTÁTICO: Esqueceu de abrir parenteses no IF
+    if a == 5) { 
+        
+        // SINTÁTICO/SEMÂNTICO: O Parser proíbe declarações de variaveis 
+        // no meio do bloco (elas devem vir antes das instruções)
+        int proibido_aqui; 
+        
+        char c;
+        c = '\n';
+        
+        // LÉXICO: String que não fecha. Como isso detona até o final da linha,
+        // o Parser e o Scanner vão chorar muito aqui.
+        c = "string apocaliptica
+    }
+    
+    // SINTÁTICO: Esqueceu ';' no return
+    return 0
+}
