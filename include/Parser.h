@@ -4,16 +4,20 @@
 #include "Logger.h"
 #include "Scanner.h"
 #include "SymbolTable.h"
+
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 class ParseError : public std::runtime_error {
 public:
-  ParseError(const string &msg) : std::runtime_error(msg) {}
+  ParseError(const std::string &msg) : std::runtime_error(msg) {}
 };
 
 class Parser {
 public:
-  Parser(Scanner *scanner, Logger *handler);
+  Parser(Scanner *scanner, Logger *logger);
+  ~Parser();
   void run();
   SymbolTable *getSymbolTable() { return globalST; }
 
@@ -21,7 +25,9 @@ private:
   // --- Atributos ---
   Scanner *scanner;
   Logger *logger;
-  Token *lToken;
+  Token lToken;
+
+  std::vector<SymbolTable *> ownedTables;
   SymbolTable *globalST;
   SymbolTable *currentST;
 
@@ -30,24 +36,30 @@ private:
   // ==========================================
   void initSimbolTable();
   void advanceToNextToken();
-  void consumeExpectedToken(int);
+  void consumeExpectedToken(TokenType token);
 
-  void parseError(string);
-  void throwError(string);
+  void parseError(const std::string &msg);
+  void throwError(const std::string &msg);
   void synchronize();
 
-  inline bool checkSingleToken(int Token) { return (lToken->name == Token); }
+  inline bool checkSingleToken(TokenType token) {
+    return (lToken.name == token);
+  }
   template <typename... Tokens> bool checkTokens(Tokens... tokens) {
     return (checkSingleToken(tokens) || ...);
   }
-  inline bool checkLexeme(string str) {
-    return (lToken->name == ID && lToken->lexeme == str);
+  inline bool checkLexeme(const std::string &str) {
+    return (lToken.name == TokenType::ID && lToken.lexeme == str);
   }
   template <typename... Strings> bool checkLexemes(Strings... strs) {
     return (checkLexeme(strs) || ...);
   }
 
-  void createNewContext() { currentST = new SymbolTable(currentST); }
+  void createNewContext() {
+    SymbolTable *table = new SymbolTable(currentST);
+    currentST = table;
+    ownedTables.push_back(table);
+  }
   void backToPreviousContext() {
     if (currentST->getParent())
       currentST = currentST->getParent();

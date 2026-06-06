@@ -4,13 +4,17 @@
 #include "Logger.h"
 #include "Token.h"
 
+#include <string>
+
+class SourceFile;
+
 class Scanner {
 public:
-  Scanner(Logger *logger);
-  Token *nextToken();
+  Scanner(const SourceFile &sourceFile, Logger *logger);
+  Token nextToken();
 
 private:
-  string input;
+  std::string input;
   Logger *logger;
 
   int pos;
@@ -22,11 +26,12 @@ private:
   // Setup & Utilitários
   // ==========================================
 public:
-  int getLine();
-  int getTokenColumn();
+  int getLine() const;
+  int getTokenColumn() const;
 
 private:
-  void lexicalError(int errLine, int errCol, string msg, int len = 1);
+  void lexicalError(int errLine, int errCol, const std::string &msg,
+                    int len = 1);
   void advance(int steps = 1);
   void skipWhitespaceAndComments();
 
@@ -41,22 +46,23 @@ private:
   inline bool matchNext(char expected) {
     return pos + 1 < (int)input.length() && input[pos + 1] == expected;
   }
-  inline Token *makeToken(int name, int attribute = UNDEF, string lexeme = "") {
-    return new Token(name, attribute, lexeme);
+  inline Token makeToken(TokenType name, TokenType attribute = TokenType::UNDEF,
+                         const std::string &lexeme = "") {
+    return Token(name, attribute, lexeme);
   }
-  inline string extractLexeme(int startPos, int endPos) {
+  inline std::string extractLexeme(int startPos, int endPos) {
     return input.substr(startPos, endPos - startPos);
   }
 
   // ==========================================
   // Leitura de Tokens
   // ==========================================
-  Token *readNumber();
-  Token *readIdentifier();
-  Token *readCharLiteral();
-  Token *readStringLiteral();
-  Token *readOperator();
-  Token *readSeparator();
+  Token readNumber();
+  Token readIdentifier();
+  bool readCharLiteral(Token &out);
+  bool readStringLiteral(Token &out);
+  bool readOperator(Token &out);
+  Token readSeparator();
 };
 
 #endif

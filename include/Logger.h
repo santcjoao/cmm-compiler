@@ -1,28 +1,33 @@
 #ifndef __Logger_h
 #define __Logger_h
 
-#include <fstream>
-#include <iostream>
 #include <string>
 
-using namespace std;
+class SourceFile;
+
+enum class DiagLevel { ERROR, WARNING, NOTE };
 
 class Logger {
-private:
-  string filename;
-  string source;
-  int errorCount;
-
 public:
-  Logger(string file);
+  Logger(const SourceFile &sourceFile);
 
-  string getSource();
-  string getLineContent(int lineNumber);
+  void printDiagnostic(DiagLevel level, int line, int col,
+                       const std::string &msg, int len = 1);
 
-  void printDiagnostic(int errLine, int errCol, string msg, int len = 1);
+  void error(int line, int col, const std::string &msg, int len = 1);
+  void warning(int line, int col, const std::string &msg, int len = 1);
+  void note(int line, int col, const std::string &msg, int len = 1);
 
-  int getErrorCount();
-  bool hasErrors();
+  void printSummary();
+
+  int getErrorCount() const;
+  int getWarningCount() const;
+  bool hasErrors() const;
+
+private:
+  const SourceFile &sourceFile;
+  int errorCount;
+  int warningCount;
 };
 
 #endif

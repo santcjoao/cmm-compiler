@@ -1,26 +1,31 @@
 #include "../include/SymbolTable.h"
 
-SymbolTable::SymbolTable() { parent = nullptr; }
+using namespace std;
 
-SymbolTable::SymbolTable(SymbolTable *p) { parent = p; }
+SymbolTable::SymbolTable() : parent(nullptr) {}
 
-bool SymbolTable::add(STEntry *t) {
-  if (symbols.find(t->token->lexeme) != symbols.end())
+SymbolTable::SymbolTable(SymbolTable *p) : parent(p) {}
+
+bool SymbolTable::add(STEntry entry) {
+  string key = entry.token.lexeme;
+  if (symbols.find(key) != symbols.end())
     return false;
-  symbols.insert({t->token->lexeme, t});
+  symbols.insert(make_pair(key, entry));
   return true;
 }
 
-bool SymbolTable::remove(string name) { return symbols.erase(name) != 0; }
+bool SymbolTable::remove(const string &name) {
+  return symbols.erase(name) != 0;
+}
 
 void SymbolTable::clear() { symbols.clear(); }
 
-bool SymbolTable::isEmpty() { return symbols.empty(); }
+bool SymbolTable::isEmpty() const { return symbols.empty(); }
 
-STEntry *SymbolTable::get(string name) {
+STEntry *SymbolTable::get(const string &name) {
   auto it = symbols.find(name);
   if (it != symbols.end()) {
-    return it->second;
+    return &it->second;
   }
   if (parent) {
     return parent->get(name);

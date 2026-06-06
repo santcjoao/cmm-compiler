@@ -1,6 +1,8 @@
+#include "include/Logger.h"
 #include "include/Parser.h"
 #include "include/Scanner.h"
-#include "include/Logger.h"
+#include "include/SourceFile.h"
+
 #include <iostream>
 
 using namespace std;
@@ -11,8 +13,13 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  Logger logger(argv[1]);
-  Scanner scanner(&logger);
+  SourceFile source(argv[1]);
+  if (!source.isValid()) {
+    return 1;
+  }
+
+  Logger logger(source);
+  Scanner scanner(source, &logger);
   Parser parser(&scanner, &logger);
   parser.run();
 

@@ -1,37 +1,57 @@
 #ifndef __Token_h
 #define __Token_h
 
-#include <ctype.h>
-#include <iostream>
 #include <string>
 
-using namespace std;
-
-enum Keywords { VOID = 100, CHAR, INT, IF, ELSE, WHILE, FOR, RETURN };
-
-enum Names {
+enum class TokenType {
+  // Especiais
   UNDEF,
+  END_OF_FILE,
+
+  // Identificadores e literais
   ID,
   INTEGERCONSTANT,
   CHARCONSTANT,
+  STRINGCONSTANT,
+
+  // Atributos de caractere
   CH,
   BN,
   B0,
-  STRINGCONSTANT,
+
+  // Palavras-chave
+  VOID,
+  CHAR,
+  INT,
+  IF,
+  ELSE,
+  WHILE,
+  FOR,
+  RETURN,
+
+  // Operadores aritméticos
   PLUS,
   MINUS,
   TIMES,
   DIVIDED,
+
+  // Operadores de atribuição/comparação
   ASSIGN,
   EQUIVALENT,
   DIFF,
+
+  // Operadores relacionais
   LE,
   LT,
   GE,
   GT,
+
+  // Operadores lógicos
   AND,
   OR,
   NOT,
+
+  // Separadores
   LPAREN,
   RPAREN,
   LBRACKET,
@@ -39,65 +59,64 @@ enum Names {
   LBRACE,
   RBRACE,
   COMMA,
-  SEMICOLON,
-  END_OF_FILE
+  SEMICOLON
 };
 
-inline string tokenToString(int token) {
+inline std::string tokenToString(TokenType token) {
   switch (token) {
-  case ID:
+  case TokenType::ID:
     return "identificador";
-  case INTEGERCONSTANT:
+  case TokenType::INTEGERCONSTANT:
     return "número inteiro";
-  case CHARCONSTANT:
+  case TokenType::CHARCONSTANT:
     return "caractere";
-  case STRINGCONSTANT:
+  case TokenType::STRINGCONSTANT:
     return "string";
-  case PLUS:
+  case TokenType::PLUS:
     return "+";
-  case MINUS:
+  case TokenType::MINUS:
     return "-";
-  case TIMES:
+  case TokenType::TIMES:
     return "*";
-  case DIVIDED:
+  case TokenType::DIVIDED:
     return "/";
-  case ASSIGN:
+  case TokenType::ASSIGN:
     return "=";
-  case EQUIVALENT:
+  case TokenType::EQUIVALENT:
     return "==";
-  case DIFF:
+  case TokenType::DIFF:
     return "!=";
-  case LE:
+  case TokenType::LE:
     return "<=";
-  case LT:
+  case TokenType::LT:
     return "<";
-  case GE:
+  case TokenType::GE:
     return ">=";
-  case GT:
+  case TokenType::GT:
     return ">";
-  case AND:
+  case TokenType::AND:
     return "&&";
-  case OR:
+  case TokenType::OR:
     return "||";
-  case NOT:
+  case TokenType::NOT:
     return "!";
-  case LPAREN:
+  case TokenType::LPAREN:
     return "(";
-  case RPAREN:
+  case TokenType::RPAREN:
     return ")";
-  case LBRACKET:
+  case TokenType::LBRACKET:
     return "[";
-  case RBRACKET:
+  case TokenType::RBRACKET:
     return "]";
-  case LBRACE:
+  case TokenType::LBRACE:
     return "{";
-  case RBRACE:
+  case TokenType::RBRACE:
     return "}";
-  case COMMA:
+  case TokenType::COMMA:
     return ",";
-  case SEMICOLON:
+  case TokenType::SEMICOLON:
     return ";";
-  case END_OF_FILE:
+  case TokenType::END_OF_FILE:
     return "fim de arquivo";
   default:
     return "token desconhecido";
@@ -106,13 +125,17 @@ inline string tokenToString(int token) {
 
 class Token {
 public:
-  int name;
-  int attribute;
-  string lexeme;
+  TokenType name;
+  TokenType attribute;
+  std::string lexeme;
 
-  Token(int name, int attr = UNDEF, string l = "")
+  Token() : name(TokenType::UNDEF), attribute(TokenType::UNDEF) {}
+
+  Token(TokenType name, TokenType attr, const std::string &l)
       : name(name), attribute(attr), lexeme(l) {}
-  Token(int name, string l) : name(name), attribute(UNDEF), lexeme(l) {}
+
+  Token(TokenType name, const std::string &l)
+      : name(name), attribute(TokenType::UNDEF), lexeme(l) {}
 };
 
 #endif

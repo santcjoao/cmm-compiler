@@ -1,0 +1,20 @@
+// Programa válido em C-- para cálculo de Fatorial de forma iterativa
+int calcular_fatorial(int n) {
+    int resultado;
+    resultado = 1;
+    
+    while (n > 1) {
+        resultado = resultado * n;
+        n = n - 1;
+    }
+    
+    return resultado;
+}
+
+void main() {
+    int numero;
+    int fat;
+    
+    numero = 5;
+    fat = calcular_fatorial(numero);
+}

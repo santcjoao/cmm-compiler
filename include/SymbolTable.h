@@ -2,46 +2,34 @@
 #define __SymbolTable_h
 
 #include "Token.h"
+
 #include <map>
 #include <string>
 
-using namespace std;
-
 class STEntry {
 public:
-  Token *token;
+  Token token;
   bool reserved;
 
-  STEntry() {
-    token = 0;
-    reserved = false;
-  }
-  STEntry(Token *t) {
-    token = t;
-    reserved = false;
-  }
-  STEntry(Token *t, bool r) {
-    token = t;
-    reserved = r;
-  }
+  STEntry(const Token &t, bool r = false) : token(t), reserved(r) {}
 };
 
 class SymbolTable {
-private:
-  SymbolTable *parent;
-  map<string, STEntry *> symbols;
-
 public:
   SymbolTable();
-  SymbolTable(SymbolTable *);
+  SymbolTable(SymbolTable *parent);
 
-  bool add(STEntry *);
-  bool remove(string);
+  bool add(STEntry entry);
+  bool remove(const std::string &name);
   void clear();
-  bool isEmpty();
+  bool isEmpty() const;
 
-  STEntry *get(string);
+  STEntry *get(const std::string &name);
   SymbolTable *getParent();
+
+private:
+  SymbolTable *parent;
+  std::map<std::string, STEntry> symbols;
 };
 
 #endif

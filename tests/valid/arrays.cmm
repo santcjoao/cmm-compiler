@@ -1,0 +1,22 @@
+// Programa válido em C-- demonstrando o uso de Arrays (Vetores)
+int vetor_global[50];
+
+void preencher_global(int multiplicador) {
+    int i;
+    for (i = 0; i < 50; i = i + 1) {
+        vetor_global[i] = i * multiplicador;
+    }
+}
+
+void main() {
+    int vetor_local[10];
+    int j;
+    
+    // Chama função que altera a global
+    preencher_global(3);
+    
+    // Copia parte dos dados para o array local
+    for (j = 0; j < 10; j = j + 1) {
+        vetor_local[j] = vetor_global[j];
+    }
+}

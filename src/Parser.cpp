@@ -1,56 +1,52 @@
 #include "../include/Parser.h"
 
+using namespace std;
+
 Parser::Parser(Scanner *scan, Logger *log) {
   scanner = scan;
   logger = log;
-  currentST = globalST = new SymbolTable();
+
+  SymbolTable *table = new SymbolTable();
+  globalST = currentST = table;
+  ownedTables.push_back(table);
+
   initSimbolTable();
 }
 
 // ==========================================
 // Setup & Utilitários
 // ==========================================
-void Parser::initSimbolTable() {
-  Token *t;
+Parser::~Parser() {
+  for (size_t i = 0; i < ownedTables.size(); i++) {
+    delete ownedTables[i];
+  }
+}
 
-  t = new Token(VOID, "void");
-  globalST->add(new STEntry(t, true));
-  t = new Token(CHAR, "char");
-  globalST->add(new STEntry(t, true));
-  t = new Token(INT, "int");
-  globalST->add(new STEntry(t, true));
-  t = new Token(IF, "if");
-  globalST->add(new STEntry(t, true));
-  t = new Token(ELSE, "else");
-  globalST->add(new STEntry(t, true));
-  t = new Token(WHILE, "while");
-  globalST->add(new STEntry(t, true));
-  t = new Token(FOR, "for");
-  globalST->add(new STEntry(t, true));
-  t = new Token(RETURN, "return");
-  globalST->add(new STEntry(t, true));
+void Parser::initSimbolTable() {
+  globalST->add(STEntry(Token(TokenType::VOID, "void"), true));
+  globalST->add(STEntry(Token(TokenType::CHAR, "char"), true));
+  globalST->add(STEntry(Token(TokenType::INT, "int"), true));
+  globalST->add(STEntry(Token(TokenType::IF, "if"), true));
+  globalST->add(STEntry(Token(TokenType::ELSE, "else"), true));
+  globalST->add(STEntry(Token(TokenType::WHILE, "while"), true));
+  globalST->add(STEntry(Token(TokenType::FOR, "for"), true));
+  globalST->add(STEntry(Token(TokenType::RETURN, "return"), true));
 }
 
 void Parser::run() {
   advanceToNextToken();
   try {
     parseGlobalDeclarationList();
-    consumeExpectedToken(END_OF_FILE);
+    consumeExpectedToken(TokenType::END_OF_FILE);
   } catch (const ParseError &e) {
   }
 
-  int totalErrors = logger->getErrorCount();
-  if (totalErrors > 0) {
-    cout << "\033[1;31mCompilação falhou com " << totalErrors
-         << " erro(s).\033[0m\n";
-  } else {
-    cout << "\033[1;32mCompilação encerrada com sucesso.\033[0m\n";
-  }
+  logger->printSummary();
 }
 
 void Parser::advanceToNextToken() { lToken = scanner->nextToken(); }
 
-void Parser::consumeExpectedToken(int token) {
+void Parser::consumeExpectedToken(TokenType token) {
   if (checkSingleToken(token)) {
     advanceToNextToken();
   } else {
@@ -59,23 +55,22 @@ void Parser::consumeExpectedToken(int token) {
   }
 }
 
-void Parser::parseError(string str) {
-  int len = (lToken && !lToken->lexeme.empty()) ? lToken->lexeme.length() : 1;
-  logger->printDiagnostic(scanner->getLine(), scanner->getTokenColumn(), str,
-                          len);
+void Parser::parseError(const string &str) {
+  int len = !lToken.lexeme.empty() ? (int)lToken.lexeme.length() : 1;
+  logger->error(scanner->getLine(), scanner->getTokenColumn(), str, len);
 }
 
-void Parser::throwError(string str) {
+void Parser::throwError(const string &str) {
   parseError(str);
   throw ParseError(str);
 }
 
 void Parser::synchronize() {
-  while (lToken->name != END_OF_FILE) {
-    if (checkTokens(ID, LBRACE, RBRACE)) {
+  while (lToken.name != TokenType::END_OF_FILE) {
+    if (checkTokens(TokenType::ID, TokenType::LBRACE, TokenType::RBRACE)) {
       return;
     }
-    if (lToken->name == SEMICOLON) {
+    if (lToken.name == TokenType::SEMICOLON) {
       advanceToNextToken();
       return;
     }
@@ -84,12 +79,13 @@ void Parser::synchronize() {
 }
 
 bool Parser::isStartOfExpression() {
-  return (checkTokens(MINUS, NOT, ID, LPAREN, INTEGERCONSTANT, CHARCONSTANT,
-                      STRINGCONSTANT));
+  return (checkTokens(TokenType::MINUS, TokenType::NOT, TokenType::ID,
+                      TokenType::LPAREN, TokenType::INTEGERCONSTANT,
+                      TokenType::CHARCONSTANT, TokenType::STRINGCONSTANT));
 }
 
 bool Parser::isStartOfStatement() {
-  return (checkTokens(ID, LBRACE, SEMICOLON));
+  return (checkTokens(TokenType::ID, TokenType::LBRACE, TokenType::SEMICOLON));
 }
 
 // ==========================================
@@ -115,48 +111,48 @@ void Parser::parseGlobalDeclaration() {
     parseType();
   }
 
-  Token *idToken = lToken;
-  consumeExpectedToken(ID);
+  Token idToken = lToken;
+  consumeExpectedToken(TokenType::ID);
 
-  if (checkTokens(LPAREN)) {
+  if (checkTokens(TokenType::LPAREN)) {
     // É uma função
-    if (!currentST->add(new STEntry(idToken, false)))
-      parseError("função já declarada neste escopo: " + idToken->lexeme);
+    if (!currentST->add(STEntry(idToken)))
+      parseError("função já declarada neste escopo: " + idToken.lexeme);
     createNewContext();
-    consumeExpectedToken(LPAREN);
+    consumeExpectedToken(TokenType::LPAREN);
     parseParamTypes();
-    consumeExpectedToken(RPAREN);
-    consumeExpectedToken(LBRACE);
+    consumeExpectedToken(TokenType::RPAREN);
+    consumeExpectedToken(TokenType::LBRACE);
     parseLocalDeclarations();
     parseStatementList();
-    consumeExpectedToken(RBRACE);
+    consumeExpectedToken(TokenType::RBRACE);
     backToPreviousContext();
   } else {
     // É uma variável global
     if (isVoid) {
       throwError("variáveis não podem ser do tipo 'void'");
     }
-    if (!currentST->add(new STEntry(idToken, false)))
+    if (!currentST->add(STEntry(idToken)))
       parseError("variável global já declarada neste escopo: " +
-                 idToken->lexeme);
+                 idToken.lexeme);
     parseArraySize();
     parseMoreVariables();
-    consumeExpectedToken(SEMICOLON);
+    consumeExpectedToken(TokenType::SEMICOLON);
   }
 }
 
 void Parser::parseParamTypes() {
-  if (checkTokens(RPAREN))
+  if (checkTokens(TokenType::RPAREN))
     return;
 
   if (checkLexemes("void"))
     advanceToNextToken();
   else if (checkLexemes("char", "int")) {
     advanceToNextToken();
-    Token *idToken = lToken;
-    consumeExpectedToken(ID);
-    if (!currentST->add(new STEntry(idToken, false)))
-      parseError("parâmetro já declarado neste escopo: " + idToken->lexeme);
+    Token idToken = lToken;
+    consumeExpectedToken(TokenType::ID);
+    if (!currentST->add(STEntry(idToken)))
+      parseError("parâmetro já declarado neste escopo: " + idToken.lexeme);
     parseArrayBrackets();
     parseMoreParameters();
   } else
@@ -164,13 +160,13 @@ void Parser::parseParamTypes() {
 }
 
 void Parser::parseMoreParameters() {
-  if (checkTokens(COMMA)) {
+  if (checkTokens(TokenType::COMMA)) {
     advanceToNextToken();
     parseType();
-    Token *idToken = lToken;
-    consumeExpectedToken(ID);
-    if (!currentST->add(new STEntry(idToken, false)))
-      parseError("parâmetro já declarado neste escopo: " + idToken->lexeme);
+    Token idToken = lToken;
+    consumeExpectedToken(TokenType::ID);
+    if (!currentST->add(STEntry(idToken)))
+      parseError("parâmetro já declarado neste escopo: " + idToken.lexeme);
     parseArrayBrackets();
     parseMoreParameters();
   }
@@ -189,7 +185,7 @@ void Parser::parseLocalDeclarations() {
       parseType();
       parseVariableDeclaration();
       parseMoreVariables();
-      consumeExpectedToken(SEMICOLON);
+      consumeExpectedToken(TokenType::SEMICOLON);
     } catch (const ParseError &e) {
       synchronize();
     }
@@ -198,15 +194,15 @@ void Parser::parseLocalDeclarations() {
 }
 
 void Parser::parseVariableDeclaration() {
-  Token *idToken = lToken;
-  consumeExpectedToken(ID);
-  if (!currentST->add(new STEntry(idToken, false)))
-    parseError("variável já declarada neste escopo: " + idToken->lexeme);
+  Token idToken = lToken;
+  consumeExpectedToken(TokenType::ID);
+  if (!currentST->add(STEntry(idToken)))
+    parseError("variável já declarada neste escopo: " + idToken.lexeme);
   parseArraySize();
 }
 
 void Parser::parseMoreVariables() {
-  if (checkTokens(COMMA)) {
+  if (checkTokens(TokenType::COMMA)) {
     advanceToNextToken();
     parseVariableDeclaration();
     parseMoreVariables();
@@ -214,17 +210,17 @@ void Parser::parseMoreVariables() {
 }
 
 void Parser::parseArraySize() {
-  if (checkTokens(LBRACKET)) {
+  if (checkTokens(TokenType::LBRACKET)) {
     advanceToNextToken();
-    consumeExpectedToken(INTEGERCONSTANT);
-    consumeExpectedToken(RBRACKET);
+    consumeExpectedToken(TokenType::INTEGERCONSTANT);
+    consumeExpectedToken(TokenType::RBRACKET);
   }
 }
 
 void Parser::parseArrayBrackets() {
-  if (checkTokens(LBRACKET)) {
+  if (checkTokens(TokenType::LBRACKET)) {
     advanceToNextToken();
-    consumeExpectedToken(RBRACKET);
+    consumeExpectedToken(TokenType::RBRACKET);
   }
 }
 
@@ -252,18 +248,19 @@ void Parser::parseStatement() {
   } else if (checkLexemes("return")) {
     parseReturnStatement();
   } else if (checkLexemes("int", "char")) {
-    parseError("declarações de variáveis devem vir antes das "
-               "instruções/comandos do bloco");
+    logger->warning(scanner->getLine(), scanner->getTokenColumn(),
+                    "declarações de variáveis devem vir antes das "
+                    "instruções/comandos do bloco");
     parseLocalDeclarations();
-  } else if (checkTokens(ID)) {
-    Token *idToken = lToken;
-    if (!currentST->get(idToken->lexeme))
-      parseError("variável ou função não declarada: " + idToken->lexeme);
+  } else if (checkTokens(TokenType::ID)) {
+    Token idToken = lToken;
+    if (!currentST->get(idToken.lexeme))
+      parseError("variável ou função não declarada: " + idToken.lexeme);
     advanceToNextToken();
     parseAssignmentOrCall();
-  } else if (checkTokens(LBRACE)) {
+  } else if (checkTokens(TokenType::LBRACE)) {
     parseBlock();
-  } else if (checkTokens(SEMICOLON)) {
+  } else if (checkTokens(TokenType::SEMICOLON)) {
     advanceToNextToken();
   } else {
     throwError("início de instrução inválido");
@@ -272,10 +269,10 @@ void Parser::parseStatement() {
 
 void Parser::parseIfStatement() {
   advanceToNextToken();
-  consumeExpectedToken(LPAREN);
+  consumeExpectedToken(TokenType::LPAREN);
   createNewContext();
   parseExpression();
-  consumeExpectedToken(RPAREN);
+  consumeExpectedToken(TokenType::RPAREN);
   parseStatement();
   parseOptionalElse();
   backToPreviousContext();
@@ -283,24 +280,24 @@ void Parser::parseIfStatement() {
 
 void Parser::parseWhileStatement() {
   advanceToNextToken();
-  consumeExpectedToken(LPAREN);
+  consumeExpectedToken(TokenType::LPAREN);
   createNewContext();
   parseExpression();
-  consumeExpectedToken(RPAREN);
+  consumeExpectedToken(TokenType::RPAREN);
   parseStatement();
   backToPreviousContext();
 }
 
 void Parser::parseForStatement() {
   advanceToNextToken();
-  consumeExpectedToken(LPAREN);
+  consumeExpectedToken(TokenType::LPAREN);
   createNewContext();
   parseOptionalAssignment();
-  consumeExpectedToken(SEMICOLON);
+  consumeExpectedToken(TokenType::SEMICOLON);
   parseOptionalExpression();
-  consumeExpectedToken(SEMICOLON);
+  consumeExpectedToken(TokenType::SEMICOLON);
   parseOptionalAssignment();
-  consumeExpectedToken(RPAREN);
+  consumeExpectedToken(TokenType::RPAREN);
   parseStatement();
   backToPreviousContext();
 }
@@ -308,14 +305,14 @@ void Parser::parseForStatement() {
 void Parser::parseReturnStatement() {
   advanceToNextToken();
   parseOptionalExpression();
-  consumeExpectedToken(SEMICOLON);
+  consumeExpectedToken(TokenType::SEMICOLON);
 }
 
 void Parser::parseBlock() {
   createNewContext();
   advanceToNextToken();
   parseStatementList();
-  consumeExpectedToken(RBRACE);
+  consumeExpectedToken(TokenType::RBRACE);
   backToPreviousContext();
 }
 
@@ -327,32 +324,32 @@ void Parser::parseOptionalElse() {
 }
 
 void Parser::parseOptionalAssignment() {
-  if (checkTokens(ID)) {
+  if (checkTokens(TokenType::ID)) {
     parseAssignment();
   }
 }
 
 void Parser::parseAssignment() {
-  Token *idToken = lToken;
-  consumeExpectedToken(ID);
-  if (!currentST->get(idToken->lexeme))
-    parseError("variável ou função não declarada: " + idToken->lexeme);
+  Token idToken = lToken;
+  consumeExpectedToken(TokenType::ID);
+  if (!currentST->get(idToken.lexeme))
+    parseError("variável ou função não declarada: " + idToken.lexeme);
   parseArrayAccess();
-  consumeExpectedToken(ASSIGN);
+  consumeExpectedToken(TokenType::ASSIGN);
   parseExpression();
 }
 
 void Parser::parseAssignmentOrCall() {
-  if (checkTokens(LPAREN)) {
+  if (checkTokens(TokenType::LPAREN)) {
     advanceToNextToken();
     parseArgumentList();
-    consumeExpectedToken(RPAREN);
-    consumeExpectedToken(SEMICOLON);
-  } else if (checkTokens(LBRACKET, ASSIGN)) {
+    consumeExpectedToken(TokenType::RPAREN);
+    consumeExpectedToken(TokenType::SEMICOLON);
+  } else if (checkTokens(TokenType::LBRACKET, TokenType::ASSIGN)) {
     parseArrayAccess();
-    consumeExpectedToken(ASSIGN);
+    consumeExpectedToken(TokenType::ASSIGN);
     parseExpression();
-    consumeExpectedToken(SEMICOLON);
+    consumeExpectedToken(TokenType::SEMICOLON);
   } else
     throwError("esperada atribuição ('=') ou chamada de função ('(') após o "
                "identificador");
@@ -362,23 +359,24 @@ void Parser::parseAssignmentOrCall() {
 // Expressions
 // ==========================================
 void Parser::parseExpression() {
-  if (checkTokens(MINUS, NOT)) {
+  if (checkTokens(TokenType::MINUS, TokenType::NOT)) {
     advanceToNextToken();
     parseExpression();
     parseExpressionTail();
-  } else if (checkTokens(LPAREN)) {
+  } else if (checkTokens(TokenType::LPAREN)) {
     advanceToNextToken();
     parseExpression();
-    consumeExpectedToken(RPAREN);
+    consumeExpectedToken(TokenType::RPAREN);
     parseExpressionTail();
-  } else if (checkTokens(ID)) {
-    Token *idToken = lToken;
-    if (!currentST->get(idToken->lexeme))
-      parseError("variável ou função não declarada: " + idToken->lexeme);
+  } else if (checkTokens(TokenType::ID)) {
+    Token idToken = lToken;
+    if (!currentST->get(idToken.lexeme))
+      parseError("variável ou função não declarada: " + idToken.lexeme);
     advanceToNextToken();
     parseIdentifierSuffix();
     parseExpressionTail();
-  } else if (checkTokens(INTEGERCONSTANT, CHARCONSTANT, STRINGCONSTANT)) {
+  } else if (checkTokens(TokenType::INTEGERCONSTANT, TokenType::CHARCONSTANT,
+                         TokenType::STRINGCONSTANT)) {
     advanceToNextToken();
     parseExpressionTail();
   } else {
@@ -387,15 +385,17 @@ void Parser::parseExpression() {
 }
 
 void Parser::parseExpressionTail() {
-  if (checkTokens(PLUS, MINUS, TIMES, DIVIDED)) {
+  if (checkTokens(TokenType::PLUS, TokenType::MINUS, TokenType::TIMES,
+                  TokenType::DIVIDED)) {
     parseBinaryOperator();
     parseExpression();
     parseExpressionTail();
-  } else if (checkTokens(EQUIVALENT, DIFF, LE, GE, LT, GT)) {
+  } else if (checkTokens(TokenType::EQUIVALENT, TokenType::DIFF, TokenType::LE,
+                         TokenType::GE, TokenType::LT, TokenType::GT)) {
     parseRelationalOperator();
     parseExpression();
     parseExpressionTail();
-  } else if (checkTokens(AND, OR)) {
+  } else if (checkTokens(TokenType::AND, TokenType::OR)) {
     parseLogicalOperator();
     parseExpression();
     parseExpressionTail();
@@ -409,22 +409,22 @@ void Parser::parseOptionalExpression() {
 }
 
 void Parser::parseIdentifierSuffix() {
-  if (checkTokens(LPAREN)) {
+  if (checkTokens(TokenType::LPAREN)) {
     advanceToNextToken();
     parseArgumentList();
-    consumeExpectedToken(RPAREN);
-  } else if (checkTokens(LBRACKET)) {
+    consumeExpectedToken(TokenType::RPAREN);
+  } else if (checkTokens(TokenType::LBRACKET)) {
     advanceToNextToken();
     parseExpression();
-    consumeExpectedToken(RBRACKET);
+    consumeExpectedToken(TokenType::RBRACKET);
   }
 }
 
 void Parser::parseArrayAccess() {
-  if (checkTokens(LBRACKET)) {
+  if (checkTokens(TokenType::LBRACKET)) {
     advanceToNextToken();
     parseExpression();
-    consumeExpectedToken(RBRACKET);
+    consumeExpectedToken(TokenType::RBRACKET);
   }
 }
 
@@ -436,7 +436,7 @@ void Parser::parseArgumentList() {
 }
 
 void Parser::parseMoreExpressions() {
-  if (checkTokens(COMMA)) {
+  if (checkTokens(TokenType::COMMA)) {
     advanceToNextToken();
     parseExpression();
     parseMoreExpressions();
@@ -444,7 +444,8 @@ void Parser::parseMoreExpressions() {
 }
 
 void Parser::parseBinaryOperator() {
-  if (checkTokens(PLUS, MINUS, TIMES, DIVIDED)) {
+  if (checkTokens(TokenType::PLUS, TokenType::MINUS, TokenType::TIMES,
+                  TokenType::DIVIDED)) {
     advanceToNextToken();
   } else {
     throwError("operador aritmético esperado ('+', '-', '*', '/')");
@@ -452,7 +453,8 @@ void Parser::parseBinaryOperator() {
 }
 
 void Parser::parseRelationalOperator() {
-  if (checkTokens(EQUIVALENT, DIFF, LE, GE, LT, GT)) {
+  if (checkTokens(TokenType::EQUIVALENT, TokenType::DIFF, TokenType::LE,
+                  TokenType::GE, TokenType::LT, TokenType::GT)) {
     advanceToNextToken();
   } else {
     throwError(
@@ -461,7 +463,7 @@ void Parser::parseRelationalOperator() {
 }
 
 void Parser::parseLogicalOperator() {
-  if (checkTokens(AND, OR)) {
+  if (checkTokens(TokenType::AND, TokenType::OR)) {
     advanceToNextToken();
   } else {
     throwError("operador lógico esperado ('&&', '||')");

@@ -1,0 +1,18 @@
+// Programa válido em C-- para calcular a sequência de Fibonacci
+int fibonacci(int n) {
+    if (n <= 1) {
+        return n;
+    } else {
+        // Chamadas recursivas
+        return fibonacci(n - 1) + fibonacci(n - 2);
+    }
+}
+
+void main() {
+    int i, resultado;
+    
+    // Calcula os 10 primeiros números de Fibonacci
+    for (i = 0; i < 10; i = i + 1) {
+        resultado = fibonacci(i);
+    }
+}

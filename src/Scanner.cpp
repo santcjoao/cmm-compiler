@@ -1,8 +1,13 @@
 #include "../include/Scanner.h"
+#include "../include/SourceFile.h"
 
-Scanner::Scanner(Logger *log) {
+#include <cctype>
+
+using namespace std;
+
+Scanner::Scanner(const SourceFile &sourceFile, Logger *log) {
   logger = log;
-  input = logger->getSource();
+  input = sourceFile.getSource();
   pos = 0;
   line = 1;
   column = 1;
@@ -12,10 +17,12 @@ Scanner::Scanner(Logger *log) {
 // ==========================================
 // Setup & Utilitários
 // ==========================================
-int Scanner::getLine() { return line; }
-int Scanner::getTokenColumn() { return tokenColumn; }
-void Scanner::lexicalError(int errLine, int errCol, string msg, int len) {
-  logger->printDiagnostic(errLine, errCol, msg, len);
+int Scanner::getLine() const { return line; }
+int Scanner::getTokenColumn() const { return tokenColumn; }
+
+void Scanner::lexicalError(int errLine, int errCol, const string &msg,
+                           int len) {
+  logger->error(errLine, errCol, msg, len);
 }
 
 void Scanner::advance(int steps) {
@@ -64,69 +71,77 @@ void Scanner::skipWhitespaceAndComments() {
 // ==========================================
 // Principal
 // ==========================================
-Token *Scanner::nextToken() {
-  skipWhitespaceAndComments();
-  if (isAtEnd())
-    return makeToken(END_OF_FILE);
+Token Scanner::nextToken() {
+  while (true) {
+    skipWhitespaceAndComments();
+    if (isAtEnd())
+      return makeToken(TokenType::END_OF_FILE);
 
-  tokenColumn = column;
-  char c = currentPeek();
+    tokenColumn = column;
+    char c = currentPeek();
 
-  if (isalpha(c))
-    return readIdentifier();
+    if (isalpha(c))
+      return readIdentifier();
 
-  if (isdigit(c))
-    return readNumber();
+    if (isdigit(c))
+      return readNumber();
 
-  if (c == '\'') {
-    Token *t = readCharLiteral();
-    return t ? t : nextToken();
+    if (c == '\'') {
+      Token t;
+      if (readCharLiteral(t))
+        return t;
+      continue;
+    }
+
+    if (c == '"') {
+      Token t;
+      if (readStringLiteral(t))
+        return t;
+      continue;
+    }
+
+    if (c == '+' || c == '-' || c == '*' || c == '/' || c == '=' || c == '!' ||
+        c == '<' || c == '>' || c == '&' || c == '|') {
+      Token t;
+      if (readOperator(t))
+        return t;
+      continue;
+    }
+
+    if (c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}' ||
+        c == ',' || c == ';') {
+      return readSeparator();
+    }
+
+    string msg = "caractere não reconhecido: '";
+    msg += c;
+    msg += "'";
+    lexicalError(line, tokenColumn, msg);
+    advance();
   }
-
-  if (c == '"') {
-    Token *t = readStringLiteral();
-    return t ? t : nextToken();
-  }
-
-  if (c == '+' || c == '-' || c == '*' || c == '/' || c == '=' || c == '!' ||
-      c == '<' || c == '>' || c == '&' || c == '|') {
-    Token *t = readOperator();
-    return t ? t : nextToken();
-  }
-
-  if (c == '(' || c == ')' || c == '[' || c == ']' || c == '{' || c == '}' ||
-      c == ',' || c == ';') {
-    Token *t = readSeparator();
-    return t ? t : nextToken();
-  }
-
-  string msg = "caractere não reconhecido: '";
-  msg += c;
-  msg += "'";
-  lexicalError(line, tokenColumn, msg);
-  advance();
-  return nextToken();
 }
 
 // ==========================================
 // Leitura de Tokens
 // ==========================================
-Token *Scanner::readNumber() {
+Token Scanner::readNumber() {
   int startPos = pos;
   while (isdigit(currentPeek()))
     advance();
-  return makeToken(INTEGERCONSTANT, UNDEF, extractLexeme(startPos, pos));
+  return makeToken(TokenType::INTEGERCONSTANT, TokenType::UNDEF,
+                   extractLexeme(startPos, pos));
 }
 
-Token *Scanner::readIdentifier() {
+Token Scanner::readIdentifier() {
   int startPos = pos;
   while (isalpha(currentPeek()) || isdigit(currentPeek()) ||
          currentPeek() == '_')
     advance();
-  return makeToken(ID, UNDEF, extractLexeme(startPos, pos));
+  return makeToken(TokenType::ID, TokenType::UNDEF,
+                   extractLexeme(startPos, pos));
 }
 
-Token *Scanner::readCharLiteral() {
+bool Scanner::readCharLiteral(Token &out) {
   int startPos = pos;
   int startLine = line;
   int startCol = column;
@@ -138,33 +153,37 @@ Token *Scanner::readCharLiteral() {
       advance();
       if (matchCurrent('\'')) {
         advance();
-        return makeToken(CHARCONSTANT, BN, "\\n");
+        out = makeToken(TokenType::CHARCONSTANT, TokenType::BN, "\\n");
+        return true;
       }
     } else if (matchCurrent('0')) {
       advance();
       if (matchCurrent('\'')) {
         advance();
-        return makeToken(CHARCONSTANT, B0, "\\0");
+        out = makeToken(TokenType::CHARCONSTANT, TokenType::B0, "\\0");
+        return true;
       }
     } else {
       lexicalError(startLine, startCol,
                    "tratamento de escape de caractere inválido.", 2);
-      return nullptr;
+      return false;
     }
   } else if (isprint(currentPeek()) && !matchCurrent('\'') &&
              !matchCurrent('\\')) {
     advance();
     if (matchCurrent('\'')) {
       advance();
-      return makeToken(CHARCONSTANT, CH, extractLexeme(startPos + 1, pos - 1));
+      out = makeToken(TokenType::CHARCONSTANT, TokenType::CH,
+                      extractLexeme(startPos + 1, pos - 1));
+      return true;
     }
   }
 
   lexicalError(startLine, startCol, "literal de caractere mal formado.");
-  return nullptr;
+  return false;
 }
 
-Token *Scanner::readStringLiteral() {
+bool Scanner::readStringLiteral(Token &out) {
   int startPos = pos;
   int startLine = line;
   int startCol = column;
@@ -176,60 +195,75 @@ Token *Scanner::readStringLiteral() {
   if (isAtEnd()) {
     lexicalError(startLine, startCol,
                  "string não fechada antes do fim do arquivo.");
-    return nullptr;
+    return false;
   }
 
   advance();
-  return makeToken(STRINGCONSTANT, UNDEF, extractLexeme(startPos + 1, pos - 1));
+  out = makeToken(TokenType::STRINGCONSTANT, TokenType::UNDEF,
+                  extractLexeme(startPos + 1, pos - 1));
+  return true;
 }
 
-Token *Scanner::readOperator() {
+bool Scanner::readOperator(Token &out) {
   char c = currentPeek();
   int startCol = column;
   advance();
 
   switch (c) {
   case '+':
-    return makeToken(PLUS, UNDEF, "+");
+    out = makeToken(TokenType::PLUS, TokenType::UNDEF, "+");
+    return true;
   case '-':
-    return makeToken(MINUS, UNDEF, "-");
+    out = makeToken(TokenType::MINUS, TokenType::UNDEF, "-");
+    return true;
   case '*':
-    return makeToken(TIMES, UNDEF, "*");
+    out = makeToken(TokenType::TIMES, TokenType::UNDEF, "*");
+    return true;
   case '/':
-    return makeToken(DIVIDED, UNDEF, "/");
+    out = makeToken(TokenType::DIVIDED, TokenType::UNDEF, "/");
+    return true;
 
   case '=':
     if (matchCurrent('=')) {
       advance();
-      return makeToken(EQUIVALENT, UNDEF, "==");
+      out = makeToken(TokenType::EQUIVALENT, TokenType::UNDEF, "==");
+      return true;
     }
-    return makeToken(ASSIGN, UNDEF, "=");
+    out = makeToken(TokenType::ASSIGN, TokenType::UNDEF, "=");
+    return true;
 
   case '!':
     if (matchCurrent('=')) {
       advance();
-      return makeToken(DIFF, UNDEF, "!=");
+      out = makeToken(TokenType::DIFF, TokenType::UNDEF, "!=");
+      return true;
     }
-    return makeToken(NOT, UNDEF, "!");
+    out = makeToken(TokenType::NOT, TokenType::UNDEF, "!");
+    return true;
 
   case '<':
     if (matchCurrent('=')) {
       advance();
-      return makeToken(LE, UNDEF, "<=");
+      out = makeToken(TokenType::LE, TokenType::UNDEF, "<=");
+      return true;
     }
-    return makeToken(LT, UNDEF, "<");
+    out = makeToken(TokenType::LT, TokenType::UNDEF, "<");
+    return true;
 
   case '>':
     if (matchCurrent('=')) {
       advance();
-      return makeToken(GE, UNDEF, ">=");
+      out = makeToken(TokenType::GE, TokenType::UNDEF, ">=");
+      return true;
     }
-    return makeToken(GT, UNDEF, ">");
+    out = makeToken(TokenType::GT, TokenType::UNDEF, ">");
+    return true;
 
   case '&':
     if (matchCurrent('&')) {
       advance();
-      return makeToken(AND, UNDEF, "&&");
+      out = makeToken(TokenType::AND, TokenType::UNDEF, "&&");
+      return true;
     }
     lexicalError(line, startCol, "operador '&' incompleto.");
     break;
@@ -237,7 +271,8 @@ Token *Scanner::readOperator() {
   case '|':
     if (matchCurrent('|')) {
       advance();
-      return makeToken(OR, UNDEF, "||");
+      out = makeToken(TokenType::OR, TokenType::UNDEF, "||");
+      return true;
     }
     lexicalError(line, startCol, "operador '|' incompleto.");
     break;
@@ -247,35 +282,31 @@ Token *Scanner::readOperator() {
     break;
   }
 
-  return nullptr;
+  return false;
 }
 
-Token *Scanner::readSeparator() {
+Token Scanner::readSeparator() {
   char c = currentPeek();
-  int startCol = column;
   advance();
 
   switch (c) {
   case '(':
-    return makeToken(LPAREN, UNDEF, "(");
+    return makeToken(TokenType::LPAREN, TokenType::UNDEF, "(");
   case ')':
-    return makeToken(RPAREN, UNDEF, ")");
+    return makeToken(TokenType::RPAREN, TokenType::UNDEF, ")");
   case '[':
-    return makeToken(LBRACKET, UNDEF, "[");
+    return makeToken(TokenType::LBRACKET, TokenType::UNDEF, "[");
   case ']':
-    return makeToken(RBRACKET, UNDEF, "]");
+    return makeToken(TokenType::RBRACKET, TokenType::UNDEF, "]");
   case '{':
-    return makeToken(LBRACE, UNDEF, "{");
+    return makeToken(TokenType::LBRACE, TokenType::UNDEF, "{");
   case '}':
-    return makeToken(RBRACE, UNDEF, "}");
+    return makeToken(TokenType::RBRACE, TokenType::UNDEF, "}");
   case ',':
-    return makeToken(COMMA, UNDEF, ",");
+    return makeToken(TokenType::COMMA, TokenType::UNDEF, ",");
   case ';':
-    return makeToken(SEMICOLON, UNDEF, ";");
+    return makeToken(TokenType::SEMICOLON, TokenType::UNDEF, ";");
   default:
-    lexicalError(line, startCol, "separador não reconhecido.");
-    break;
+    return makeToken(TokenType::UNDEF);
   }
-
-  return nullptr;
 }
