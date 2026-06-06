@@ -1,5 +1,10 @@
 # Compilador C--
 
+**Autores:**
+- Nathan de Almeida Rezende
+- Thiago Fernandes Guimarães
+- João Pedro Sant Ana de Carvalho
+
 Compilador para a linguagem C-- com análise léxica, sintática e semântica.
 
 ## Estrutura do Código-Fonte
