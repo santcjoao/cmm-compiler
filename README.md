@@ -24,11 +24,12 @@ Implementação de um compilador para a linguagem C--. O processo inclui anális
 ├── tests/                      # Programas de teste em C--
 │   ├── valid/                  # Programas válidos (devem compilar sem erros)
 │   └── invalid/                # Programas inválidos (devem gerar erros)
-└── build/                      # Diretório de saída (gerado pelo make)
+└── compiler                    # Executável gerado pelo make (Linux/macOS)
+    (ou compiler.exe no Windows)
 ```
 ## Como Compilar
 
-A compilação é gerenciada via `make`. É necessário um compilador compatível com C++17. O Makefile é compatível com Linux, macOS e Windows (MSYS2/WSL).
+A compilação é gerenciada via `make`. É necessário um compilador compatível com C++17. O Makefile é universal e compatível com Linux, macOS e Windows (nativo, MSYS2 ou WSL).
 
 - **Gerar o executável:**
   ```bash
@@ -44,13 +45,10 @@ A compilação é gerenciada via `make`. É necessário um compilador compatíve
 A chamada do compilador exige o caminho para o arquivo fonte alvo:
 
 ```bash
-./build/compiler <arquivo.cmm>
+./compiler <arquivo.cmm>
 ```
+(No Windows, utilize `compiler.exe <arquivo.cmm>`)
 
-Através do comando auxiliar no Makefile:
-```bash
-make run FILE=<arquivo.cmm>
-```
 
 ## Saídas
 

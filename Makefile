@@ -1,47 +1,31 @@
 CXX = g++
-CXXFLAGS = -I. -g -std=c++17 -Wall -MMD -MP
+CXXFLAGS = -I. -std=c++17 -Wall
 
-SRC_DIR = src
-BUILD_DIR = build
-
-SRCS = Main.cpp $(wildcard $(SRC_DIR)/*.cpp)
-
-OBJS = $(SRCS:%.cpp=$(BUILD_DIR)/%.o)
-DEPS = $(OBJS:.o=.d)
-
-EXEC = $(BUILD_DIR)/compiler
+SRCS = Main.cpp $(wildcard src/*.cpp)
 
 ifeq ($(OS),Windows_NT)
-    MKDIR = if not exist "$(subst /,\,$1)" mkdir "$(subst /,\,$1)"
-    RM = if exist "$(BUILD_DIR)" rmdir /s /q "$(BUILD_DIR)"
-    EXEC := $(EXEC).exe
+	EXEC = compiler.exe
+	RUN_CMD = compiler.exe
 else
-    MKDIR = mkdir -p $1
-    RM = rm -rf $(BUILD_DIR)
+	EXEC = compiler
+	RUN_CMD = ./compiler
 endif
 
 all: $(EXEC)
 
-$(EXEC): $(OBJS)
-	@$(call MKDIR,$(dir $@))
-	@$(CXX) $(CXXFLAGS) -o $@ $^
-
-$(BUILD_DIR)/%.o: %.cpp
-	@echo "Compilando $<..."
-	@$(call MKDIR,$(dir $@))
-	@$(CXX) $(CXXFLAGS) -c $< -o $@
+$(EXEC): $(SRCS)
+	@echo "Compilando tudo..."
+	@$(CXX) $(CXXFLAGS) -o $(EXEC) $(SRCS)
 
 clean:
 	@echo "Limpando..."
-	@$(RM)
+ifeq ($(OS),Windows_NT)
+	@-del /Q $(EXEC) 2>nul || true
+else
+	@-rm -f $(EXEC)
+endif
 
-run: $(EXEC)
-	@if [ -z "$(FILE)" ]; then \
-		echo "Erro: Informe o arquivo (ex: make run FILE=teste.cmm)"; \
-	else \
-		./$(EXEC) $(FILE); \
-	fi
+run: all
+	$(RUN_CMD) $(FILE)
 
 .PHONY: all clean run
-
--include $(DEPS)

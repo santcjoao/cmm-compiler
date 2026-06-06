@@ -6,6 +6,12 @@
 using namespace std;
 
 SourceFile::SourceFile(const string &file) : filename(file), valid(false) {
+  if (file.length() < 4 || file.substr(file.length() - 4) != ".cmm") {
+    cerr << "Erro: O arquivo de entrada deve ter a extensão '.cmm': " << file
+         << "\n";
+    return;
+  }
+
   ifstream inputFile(file, ios::in);
   string line;
 

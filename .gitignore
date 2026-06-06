@@ -2,4 +2,4 @@
 *.o
 *.a
 .vscode/
-build/
+compiler
