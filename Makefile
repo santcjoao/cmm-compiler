@@ -14,16 +14,12 @@ endif
 all: $(EXEC)
 
 $(EXEC): $(SRCS)
-	@echo "Compilando tudo..."
+	@echo "Compilando..."
 	@$(CXX) $(CXXFLAGS) -o $(EXEC) $(SRCS)
 
 clean:
 	@echo "Limpando..."
-ifeq ($(OS),Windows_NT)
-	@-del /Q $(EXEC) 2>nul || true
-else
-	@-rm -f $(EXEC)
-endif
+	-@rm -f $(EXEC) compiler.exe
 
 run: all
 	$(RUN_CMD) $(FILE)
