@@ -1,7 +1,5 @@
 *.exe
-*.obj
-*.so
 *.o
 *.a
 .vscode/
-Build/
+build/

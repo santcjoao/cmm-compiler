@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -I. -g -std=c++20 -Wall -MMD -MP
+CXXFLAGS = -I. -g -std=c++17 -Wall -MMD -MP
 
 SRC_DIR = src
 BUILD_DIR = build
@@ -11,19 +11,29 @@ DEPS = $(OBJS:.o=.d)
 
 EXEC = $(BUILD_DIR)/compiler
 
+ifeq ($(OS),Windows_NT)
+    MKDIR = if not exist "$(subst /,\,$1)" mkdir "$(subst /,\,$1)"
+    RM = if exist "$(BUILD_DIR)" rmdir /s /q "$(BUILD_DIR)"
+    EXEC := $(EXEC).exe
+else
+    MKDIR = mkdir -p $1
+    RM = rm -rf $(BUILD_DIR)
+endif
+
 all: $(EXEC)
 
 $(EXEC): $(OBJS)
-	@mkdir -p $(dir $@)
+	@$(call MKDIR,$(dir $@))
 	@$(CXX) $(CXXFLAGS) -o $@ $^
 
 $(BUILD_DIR)/%.o: %.cpp
-	@mkdir -p $(dir $@)
+	@echo "Compilando $<..."
+	@$(call MKDIR,$(dir $@))
 	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
 	@echo "Limpando..."
-	@rm -rf $(BUILD_DIR)
+	@$(RM)
 
 run: $(EXEC)
 	@if [ -z "$(FILE)" ]; then \
