@@ -29,28 +29,23 @@ void Logger::note(int line, int col, const string &msg, int len) {
 void Logger::printDiagnostic(DiagLevel level, int errLine, int errCol,
                              const string &msg, int len) {
   string levelStr;
-  string colorCode;
 
   switch (level) {
   case DiagLevel::ERROR:
     levelStr = "erro";
-    colorCode = "\033[1;31m"; // vermelho
     errorCount++;
     break;
   case DiagLevel::WARNING:
     levelStr = "aviso";
-    colorCode = "\033[1;35m"; // magenta
     warningCount++;
     break;
   case DiagLevel::NOTE:
     levelStr = "nota";
-    colorCode = "\033[1;36m"; // ciano
     break;
   }
 
-  cout << "\033[1m" << sourceFile.getFilename() << ":" << errLine << ":"
-       << errCol << ": " << colorCode << levelStr << ": "
-       << "\033[0m" << msg << "\n";
+  cout << sourceFile.getFilename() << ":" << errLine << ":" << errCol << ": "
+       << levelStr << ": " << msg << "\n";
 
   string sourceLine = sourceFile.getLineContent(errLine);
   if (sourceLine.empty() && errLine > 1) {
@@ -73,28 +68,26 @@ void Logger::printDiagnostic(DiagLevel level, int errLine, int errCol,
     string errorText = sourceLine.substr(startIdx, endIdx - startIdx);
     string suffix = sourceLine.substr(endIdx);
 
-    cout << "   " << errLine << " | " << prefix << colorCode << errorText
-         << "\033[0m" << suffix << "\n";
+    cout << "   " << errLine << " | " << prefix << errorText << suffix << "\n";
 
     string spacePrefix(to_string(errLine).length(), ' ');
     string tils = (len > 1 && endIdx - startIdx > 1)
                       ? string(endIdx - startIdx - 1, '~')
                       : "";
-    cout << "   " << spacePrefix << " | " << string(startIdx, ' ') << colorCode
-         << "^" << tils << "\033[0m\n";
+    cout << "   " << spacePrefix << " | " << string(startIdx, ' ') << "^"
+         << tils << "\n";
   }
 }
 
 void Logger::printSummary() {
   if (errorCount > 0) {
-    cout << "\033[1;31mCompilação falhou com " << errorCount << " erro(s)";
+    cout << "Compilação falhou com " << errorCount << " erro(s)";
     if (warningCount > 0)
       cout << " e " << warningCount << " aviso(s)";
-    cout << ".\033[0m\n";
+    cout << ".\n";
   } else if (warningCount > 0) {
-    cout << "\033[1;33mCompilação encerrada com " << warningCount
-         << " aviso(s).\033[0m\n";
+    cout << "Compilação encerrada com " << warningCount << " aviso(s).\n";
   } else {
-    cout << "\033[1;32mCompilação encerrada com sucesso.\033[0m\n";
+    cout << "Compilação encerrada com sucesso.\n";
   }
 }
