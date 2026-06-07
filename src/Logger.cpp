@@ -8,38 +8,38 @@ using namespace std;
 Logger::Logger(const SourceFile &src)
     : sourceFile(src), errorCount(0), warningCount(0) {}
 
-int Logger::getErrorCount() const { return errorCount; }
+int Logger::getErrorCount() { return errorCount; }
 
-int Logger::getWarningCount() const { return warningCount; }
+int Logger::getWarningCount() { return warningCount; }
 
-bool Logger::hasErrors() const { return errorCount > 0; }
+bool Logger::hasErrors() { return errorCount > 0; }
 
-void Logger::error(int line, int col, const string &msg, int len) {
-  printDiagnostic(DiagLevel::ERROR, line, col, msg, len);
+void Logger::error(int line, int col, string msg, int len) {
+  printDiagnostic(ERROR, line, col, msg, len);
 }
 
-void Logger::warning(int line, int col, const string &msg, int len) {
-  printDiagnostic(DiagLevel::WARNING, line, col, msg, len);
+void Logger::warning(int line, int col, string msg, int len) {
+  printDiagnostic(WARNING, line, col, msg, len);
 }
 
-void Logger::note(int line, int col, const string &msg, int len) {
-  printDiagnostic(DiagLevel::NOTE, line, col, msg, len);
+void Logger::note(int line, int col, string msg, int len) {
+  printDiagnostic(NOTE, line, col, msg, len);
 }
 
 void Logger::printDiagnostic(DiagLevel level, int errLine, int errCol,
-                             const string &msg, int len) {
+                             string msg, int len) {
   string levelStr;
 
   switch (level) {
-  case DiagLevel::ERROR:
+  case ERROR:
     levelStr = "erro";
     errorCount++;
     break;
-  case DiagLevel::WARNING:
+  case WARNING:
     levelStr = "aviso";
     warningCount++;
     break;
-  case DiagLevel::NOTE:
+  case NOTE:
     levelStr = "nota";
     break;
   }
