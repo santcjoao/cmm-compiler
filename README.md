@@ -5,7 +5,8 @@
 - Thiago Fernandes Guimarães Silva
 - João Pedro Sant Ana de Carvalho
 
-Compilador para a linguagem C-- com análise léxica, sintática e semântica.
+Compilador para a linguagem C-- com análise léxica, sintática e semântica (apenas diferenciação
+entre IDs e palavras reservadas e criação de escopos).
 
 ## Estrutura do Código-Fonte
 
