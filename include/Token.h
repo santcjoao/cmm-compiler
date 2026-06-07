@@ -3,7 +3,7 @@
 
 #include <string>
 
-enum class TokenType {
+enum TokenType {
   // Especiais
   UNDEF,
   END_OF_FILE,
@@ -129,13 +129,12 @@ public:
   TokenType attribute;
   std::string lexeme;
 
-  Token() : name(TokenType::UNDEF), attribute(TokenType::UNDEF) {}
+  Token(TokenType n = TokenType::UNDEF, TokenType attr = TokenType::UNDEF,
+        std::string l = "")
+      : name(n), attribute(attr), lexeme(l) {}
 
-  Token(TokenType name, TokenType attr, const std::string &l)
-      : name(name), attribute(attr), lexeme(l) {}
-
-  Token(TokenType name, const std::string &l)
-      : name(name), attribute(TokenType::UNDEF), lexeme(l) {}
+  Token(TokenType n, std::string l)
+      : name(n), attribute(TokenType::UNDEF), lexeme(l) {}
 };
 
 #endif
