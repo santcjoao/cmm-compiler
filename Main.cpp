@@ -5,17 +5,9 @@
 
 #include <iostream>
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
 using namespace std;
 
 int main(int argc, char *argv[]) {
-#ifdef _WIN32
-  SetConsoleOutputCP(CP_UTF8);
-#endif
-
   if (argc != 2) {
     cout << "Uso: ./compiler nome_arquivo.cmm\n";
     return 1;
