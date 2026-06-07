@@ -2,7 +2,7 @@
 
 **Autores:**
 - Nathan de Almeida Rezende
-- Thiago Fernandes Guimarães
+- Thiago Fernandes Guimarães Silva
 - João Pedro Sant Ana de Carvalho
 
 Compilador para a linguagem C-- com análise léxica, sintática e semântica.
