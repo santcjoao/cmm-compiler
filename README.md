@@ -34,18 +34,13 @@ entre IDs e palavras reservadas e criação de escopos).
 O build é gerenciado pelo utilitário `make` e exige suporte a **C++17**.
 
 - **Linux / macOS**: Execute `make` no terminal. O executável `compiler` será gerado.
-- **Windows**: Execute `make`. O arquivo `compiler.exe` será gerado.
 
 Para remover os artefatos de compilação, utilize `make clean`.
 
 ## Execução
 
 ```bash
-# Linux / macOS
 ./compiler <arquivo.cmm>
-
-# Windows
-./compiler.exe <arquivo.cmm>
 ```
 
 Em caso de falha, os diagnósticos são exibidos no formato padrão GCC (`arquivo:linha:coluna: erro/aviso`), apontando a posição exata do código afetado.
