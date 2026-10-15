@@ -1,5 +1,18 @@
-*.exe
+# Executáveis e Binários
+compiler
+compiler.exe
 *.o
 *.a
+*.exe
+
+# Arquivos e Backups Compactados
+Zips/
+*.zip
+*.tar
+*.tar.gz
+
+# IDEs e Ferramentas
 .vscode/
-compiler
+.idea/
+.DS_Store
+Thumbs.db
